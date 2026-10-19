@@ -1,0 +1,34 @@
+<svg viewBox="0 0 640 440" role="img" aria-label="Схема: от ТЦ «Лайнер» 5 минут пешком вдоль дороги мимо «Дикси»; станция метро «Ватутинки» строится у Калужского шоссе">
+          <defs><pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#E2D4DE"/></pattern></defs>
+          <rect width="640" height="440" fill="#F7F1F5"/><rect width="640" height="440" fill="url(#dots)"/>
+          <!-- green / river -->
+          <path d="M520 0h120v150c-40-10-70-50-90-90-10-20-20-40-30-60Z" fill="#E3EDDD"/>
+          <path d="M560 0c-6 40 10 70 30 100" stroke="#C9DAEE" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <!-- residential blocks -->
+          <g fill="#ECE1E9">
+            <rect x="40" y="40" width="110" height="80" rx="14"/><rect x="180" y="30" width="120" height="70" rx="14"/><rect x="330" y="40" width="100" height="90" rx="14"/>
+            <rect x="200" y="120" width="90" height="70" rx="14"/><rect x="330" y="150" width="110" height="50" rx="14"/><rect x="460" y="150" width="70" height="60" rx="14"/>
+            <rect x="40" y="290" width="120" height="100" rx="14"/><rect x="190" y="300" width="110" height="80" rx="14"/>
+          </g>
+          <!-- main street (Нововатутинский проспект) -->
+          <path d="M20 248C120 250 200 262 280 262C380 262 460 240 560 226C600 220 625 214 640 212" stroke="#fff" stroke-width="26" fill="none" stroke-linecap="round"/>
+          <!-- Калужское шоссе -->
+          <path d="M380 440L640 260" stroke="#fff" stroke-width="30" stroke-linecap="round"/>
+          <path d="M380 440L640 260" stroke="#E0D2DC" stroke-width="2" stroke-dasharray="12 10"/>
+          <text class="lbl road" x="612" y="252" transform="rotate(-34 612 252)" text-anchor="end">Калужское ш.</text>
+          <!-- Дикси -->
+          <g class="poi"><rect x="268" y="282" width="62" height="26" rx="13" fill="#fff" stroke="#D9C9D5"/><text class="poi-t" x="299" y="300" text-anchor="middle">Дикси</text></g>
+          <!-- routes -->
+          <path class="rt rt-liner" d="M112 232C170 238 220 246 280 246C350 246 410 234 470 222C490 218 500 214 505 212" fill="none" stroke-width="7" stroke-linecap="round" stroke-dasharray="1 14"/>
+          <path class="rt rt-metro" d="M600 380C590 330 570 290 545 262C530 245 518 228 508 216" fill="none" stroke-width="7" stroke-linecap="round" stroke-dasharray="1 14"/>
+          <!-- time badge for Лайнер -->
+          <g class="badge-liner"><rect x="250" y="194" width="128" height="38" rx="12" fill="#B0143F"/><text x="314" y="219" text-anchor="middle">5 мин · 400 м</text></g>
+          <!-- start: Лайнер -->
+          <g class="pt pt-liner"><circle cx="100" cy="230" r="24"/><text x="100" y="236" text-anchor="middle">ТЦ</text><text class="lbl" x="34" y="290" text-anchor="start">ТЦ «Лайнер»</text><text class="lbl small" x="34" y="312" text-anchor="start">Нововатутинский пр., 6</text></g>
+          <!-- start: metro (строится) -->
+          <g class="pt pt-metro"><circle cx="604" cy="392" r="24"/><text x="604" y="399" text-anchor="middle">М</text><text class="lbl" x="572" y="388" text-anchor="end">м. Ватутинки</text><text class="lbl small" x="572" y="408" text-anchor="end">строится</text></g>
+          <!-- finish -->
+          <g class="finish"><circle cx="508" cy="206" r="30" fill="#26112B"/><circle cx="508" cy="206" r="42" fill="none" stroke="#26112B" stroke-opacity=".18" stroke-width="10"/>
+            <path d="M501 195c0-4 3-7 7-7s7 3 7 7v16h-14Z" fill="#F06A93"/>
+            <text class="lbl" x="508" y="146" text-anchor="middle">Венера</text><text class="lbl small" x="508" y="166" text-anchor="middle">6-я Нововатутинская, 5</text></g>
+        </svg>

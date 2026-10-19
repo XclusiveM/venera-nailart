@@ -1,0 +1,17 @@
+<svg viewBox="0 0 400 520" aria-hidden="true">
+        <defs>
+          <linearGradient id="sk" x1="0" x2="1"><stop offset="0" stop-color="#E2B19C"/><stop offset=".45" stop-color="#F3D2C1"/><stop offset="1" stop-color="#DFAE98"/></linearGradient>
+        </defs>
+        <path d="M108 168C92 250 118 320 140 395C158 465 190 505 228 505C268 505 292 468 294 420C297 362 330 300 346 222C356 172 334 140 292 134C240 127 160 127 108 168Z" fill="url(#sk)"/>
+        <ellipse cx="146" cy="104" rx="34" ry="44" fill="url(#sk)"/>
+        <ellipse cx="208" cy="78" rx="26" ry="34" fill="url(#sk)"/>
+        <ellipse cx="256" cy="86" rx="22" ry="29" fill="url(#sk)"/>
+        <ellipse cx="295" cy="108" rx="19" ry="25" fill="url(#sk)"/>
+        <ellipse cx="326" cy="140" rx="16" ry="21" fill="url(#sk)"/>
+        <ellipse cx="146" cy="82" rx="20" ry="16" fill="#F6E6EC"/>
+        <ellipse cx="208" cy="62" rx="14" ry="11" fill="#F6E6EC"/>
+        <ellipse cx="256" cy="72" rx="12" ry="9" fill="#F6E6EC"/>
+        <ellipse cx="295" cy="96" rx="10" ry="8" fill="#F6E6EC"/>
+        <ellipse cx="326" cy="130" rx="8" ry="6" fill="#F6E6EC"/>
+        <path d="M175 452c22 22 70 24 96 2" stroke="#C99582" stroke-width="3" fill="none" stroke-linecap="round" opacity=".45"/><path d="M140 300c6 40 16 70 26 92" stroke="#C99582" stroke-width="3" fill="none" stroke-linecap="round" opacity=".3"/>
+      </svg>

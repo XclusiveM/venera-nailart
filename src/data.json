@@ -1,0 +1,59 @@
+{
+  "business": {
+    "name": "Венера",
+    "name_full": "Венера, ногтевая студия",
+    "tagline": "ногтевая студия",
+    "alternate_name": "ВенераNAILART",
+    "phone": "+7 927 796-82-82",
+    "phone_href": "+79277968282",
+    "telegram": "Venera_Ni",
+    "book_url": "https://bumpix.net/188382",
+    "yandex_org": "https://yandex.ru/maps/org/veneranailart/213918968490/",
+    "yandex_reviews": "https://yandex.ru/maps/org/veneranailart/213918968490/reviews/",
+    "yandex_oid": "213918968490",
+    "street": "6-я Нововатутинская улица, 5",
+    "district": "Новые Ватутинки",
+    "region": "ТиНАО, Москва",
+    "postal": "108836",
+    "hours": "",
+    "hours_note": "По записи, время уточняйте в онлайн-записи",
+    "legal": {"ip_name": "", "ogrnip": "", "inn": ""},
+    "site_url": "",
+    "metrika_id": ""
+  },
+  "categories": [
+    {"id": "mani", "title": "Маникюр", "page": "manikyur.html"},
+    {"id": "pedi", "title": "Педикюр", "page": "pedikyur.html"},
+    {"id": "podo", "title": "Подология", "page": "podolog-novye-vatutinki.html"},
+    {"id": "men", "title": "Мужской", "page": "muzhskoj-manikyur.html"}
+  ],
+  "services": [
+    {"id": "mani-gel", "cat": "mani", "name": "Маникюр с гель-лаком", "price": 2500, "min": 90, "note": "Снятие, маникюр, укрепление, покрытие"},
+    {"id": "mani-plain", "cat": "mani", "name": "Маникюр без покрытия", "price": 1200, "min": 30, "note": ""},
+    {"id": "ext", "cat": "mani", "name": "Наращивание ногтей", "price": 4000, "min": 90, "note": ""},
+    {"id": "corr-gel", "cat": "mani", "name": "Коррекция гелем", "price": 3000, "min": 90, "note": ""},
+    {"id": "corr-poly", "cat": "mani", "name": "Коррекция полигелем", "price": 3000, "min": 90, "note": ""},
+    {"id": "smart", "cat": "pedi", "name": "Смарт-педикюр", "price": 2800, "min": 60, "note": ""},
+    {"id": "pedi-toes", "cat": "pedi", "name": "Педикюр пальчиков с гель-лаком", "price": 2800, "min": 60, "note": ""},
+    {"id": "pedi-gel", "cat": "pedi", "name": "Педикюр с гель-лаком", "price": 3300, "min": 60, "note": ""},
+    {"id": "podo-pedi", "cat": "podo", "name": "Подологический педикюр", "price": 3300, "min": 60, "note": ""},
+    {"id": "ingrown", "cat": "podo", "name": "Обработка вросшего ногтя", "price": 1000, "min": 60, "note": "Один ноготь, без установки системы. Состав уточняйте у мастера"},
+    {"id": "feet", "cat": "podo", "name": "Обработка стоп", "price": 1700, "min": 60, "note": ""},
+    {"id": "toes", "cat": "podo", "name": "Обработка пальчиков", "price": 1700, "min": 60, "note": ""},
+    {"id": "callus", "cat": "podo", "name": "Обработка мозоли", "price": 300, "min": 30, "note": ""},
+    {"id": "system", "cat": "podo", "name": "Коррекционная система", "price": 3000, "min": 60, "note": "Если ноготь врастает снова"},
+    {"id": "consult", "cat": "podo", "name": "Консультация", "price": 700, "min": 30, "note": ""},
+    {"id": "men-mani", "cat": "men", "name": "Мужской маникюр", "price": null, "min": null, "note": "Без лака и блеска"},
+    {"id": "men-pedi", "cat": "men", "name": "Мужской педикюр", "price": null, "min": null, "note": "Стопы, ногти, натоптыши"},
+    {"id": "men-both", "cat": "men", "name": "Мужской маникюр и педикюр", "price": null, "min": null, "note": "За один визит"}
+  ],
+  "extras": [
+    {"id": "french", "name": "Френч", "price": 300, "from": false},
+    {"id": "design", "name": "Дизайн", "price": 100, "from": true}
+  ],
+  "reviews": [
+    {"text": "Маникюр выполнен безупречно, видно настоящее мастерство", "author": "Нина О."},
+    {"text": "Идеальный маникюр, всё очень аккуратно, быстро, качественно", "author": "Диана Б."},
+    {"text": "Однозначно рекомендую этот салон!", "author": "Алина М."}
+  ]
+}

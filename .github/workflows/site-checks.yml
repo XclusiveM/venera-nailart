@@ -1,4 +1,4 @@
-name: Static site checks
+name: Site checks
 on:
   push:
   pull_request:
@@ -13,5 +13,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python tests/check_site.py
-      - run: node --check assets/site.js
+      - name: Static checks and build freshness
+        run: python tests/check_site.py
+      - name: JS syntax
+        run: node --check assets/site.js
+      - name: Browser smoke test (Chromium + WebKit)
+        run: |
+          pip install playwright==1.47.0
+          python -m playwright install --with-deps chromium webkit
+          python tests/smoke.py
