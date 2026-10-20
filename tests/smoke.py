@@ -3,9 +3,16 @@
 import http.server, os, socketserver, sys, threading
 from functools import partial
 from pathlib import Path
+from urllib.parse import unquote
+
+
+def spaces(value):
+    return value.replace(chr(160), ' ').replace(chr(8239), ' ')
 from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = sorted(p.name for p in ROOT.glob('*.html'))
+SNAPSHOTS = ROOT / 'artifacts' / 'screenshots'
+SNAPSHOTS.mkdir(parents=True, exist_ok=True)
 class H(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
 
@@ -19,6 +26,7 @@ err = []
 def page(br, w, path):
     pg = br.new_page(viewport={'width': w, 'height': 844}); pg.errs = []
     pg.on('pageerror', lambda e: pg.errs.append(str(e)))
+    pg.on('console', lambda m: pg.errs.append('console: '+m.text) if m.type == 'error' else None)
     pg.route('**/*', lambda r: r.continue_() if r.request.url.startswith(B) or r.request.url.startswith(('data:', 'blob:')) else r.abort())
     pg.goto(B + path); pg.wait_for_timeout(300); return pg
 
@@ -38,7 +46,83 @@ with sync_playwright() as p:
                 sw = pg.evaluate('document.documentElement.scrollWidth')
                 if sw > w: err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}')
                 if pg.errs: err.append(f'{kind} {w} {path}: {pg.errs}')
+                if path == 'index.html':
+                    if pg.locator('#works .folio-card').count() != 8:
+                        err.append(f'{kind} {w}: на главной не хватает 8 фотографий портфолио')
+                    if not pg.locator('a[href="raboty.html"]').count():
+                        err.append(f'{kind} {w}: нет перехода в фотогалерею')
+                    if pg.locator('.mcta').count() != 0:
+                        err.append(f'{kind} {w}: фиксированная плашка записи перекрывает контент')
+                    if pg.locator('#foot svg').count() != 0:
+                        err.append(f'{kind} {w}: огромная схема стопы всё ещё видна')
+                    if pg.locator('.tryon .hand-stage:not([hidden])').count() != 0:
+                        err.append(f'{kind} {w}: мультяшная рука всё ещё видна')
+                    for profile in ('188382', '463374'):
+                        if not pg.locator(f'.specialist-card a[href="https://bumpix.net/{profile}"]').count():
+                            err.append(f'{kind} {w}: отсутствует ссылка Bumpix {profile}')
+                    if pg.locator('[data-remind]').count():
+                        err.append(f'{kind} {w}: осталось выдуманное календарное напоминание')
+                if (path == 'index.html' and w in (390, 1440)) or (path == 'muzhskoj-manikyur.html' and w == 390):
+                    pg.screenshot(path=str(SNAPSHOTS / f'{kind}-{path.replace(".html", "")}-{w}.png'), full_page=False)
+                if path == 'index.html' and w == 390:
+                    for section in ('calc-section', 'podo', 'specialists'):
+                        pg.locator(f'#{section}').scroll_into_view_if_needed()
+                        pg.screenshot(path=str(SNAPSHOTS / f'{kind}-{section}-390.png'), full_page=False)
                 pg.close()
+        # Gallery: inspect actual image loading, category filtering and dialog navigation.
+        gal = page(br, 390, 'raboty.html')
+        cards = gal.locator('.folio-card')
+        if cards.count() != 30:
+            err.append(f'{kind}: ожидалось 30 фотографий, найдено {cards.count()}')
+        if gal.locator('.folio-filter').count() != 5:
+            err.append(f'{kind}: неверное число фильтров портфолио')
+        gal.locator('.folio-card').first.scroll_into_view_if_needed()
+        gal.wait_for_timeout(400)
+        first_img_ok = gal.locator('.folio-card img').first.evaluate('(im) => im.complete && im.naturalWidth > 0')
+        if not first_img_ok:
+            err.append(f'{kind}: локальная миниатюра портфолио не загрузилась')
+        gal.locator('[data-work-filter="pedicure"]').click()
+        if gal.locator('.folio-card:visible').count() != 4:
+            err.append(f'{kind}: фильтр педикюра должен показывать 4 фото')
+        gal.locator('.folio-card:visible').first.click()
+        if not gal.locator('#portfolioViewer').is_visible():
+            err.append(f'{kind}: lightbox не открылся')
+        else:
+            gal.wait_for_function("""() => {
+              const img = document.querySelector('#folioImage');
+              return img && img.complete && img.naturalWidth > 0;
+            }""", timeout=10000)
+            before = gal.locator('#folioCounter').inner_text()
+            gal.keyboard.press('ArrowRight')
+            after = gal.locator('#folioCounter').inner_text()
+            if before == after:
+                err.append(f'{kind}: стрелка в галерее не переключает изображения')
+            gal.screenshot(path=str(SNAPSHOTS / f'{kind}-gallery-lightbox-390.png'), full_page=False)
+            gal.keyboard.press('Escape')
+            if gal.locator('#portfolioViewer').is_visible():
+                err.append(f'{kind}: Escape не закрывает галерею')
+        gal.locator('[data-work-filter="all"]').click()
+        if gal.locator('.folio-card:visible').count() != 30:
+            err.append(f'{kind}: фильтр «Все» не возвращает 30 фотографий')
+        gal.screenshot(path=str(SNAPSHOTS / f'{kind}-gallery-390.png'), full_page=False)
+        if gal.errs: err.append(f'{kind} gallery: {gal.errs}')
+        gal.close()
+
+        # Visual regression guard for the mobile-first homepage.
+        for mobile_width in (360, 390):
+            hp = page(br, mobile_width, 'index.html')
+            if not hp.locator('.home-hero h1').is_visible():
+                err.append(f'{kind} {mobile_width}: главный заголовок не отображается')
+            if hp.locator('.home-hero .hero-art').count():
+                err.append(f'{kind} {mobile_width}: мультяшная иллюстрация осталась в первом экране')
+            if not hp.locator('.home-hero .hero-primary').is_visible():
+                err.append(f'{kind} {mobile_width}: нет кнопки выбора услуги')
+            if hp.locator('.quick-prices a').count() != 3:
+                err.append(f'{kind} {mobile_width}: не отображаются три быстрые цены')
+            vh = hp.locator('.home-hero').bounding_box()
+            if vh and vh['height'] > 1100:
+                err.append(f'{kind} {mobile_width}: первый экран чрезмерно высокий ({vh["height"]:.0f}px)')
+            hp.close()
         pg = page(br, 390, 'index.html')
         pg.click('[data-shape=square]'); pg.click('.sw[data-name="Нюд"]')
         if pg.get_attribute('#tryonSvg .s1', 'stop-color') != '#F2D7CE': err.append(f'{kind}: примерка не меняет цвет')
@@ -48,13 +132,61 @@ with sync_playwright() as p:
             if not pg.inner_text('#total').strip() or pg.inner_text('#total') == '—': err.append(f'{kind}: пустой итог во вкладке {t}')
         pg.click('#calc [data-tab=mani]'); pg.click('#whenDay .chip >> nth=1')
         if '%D0%B7%D0%B0%D0%B2%D1%82%D1%80%D0%B0' not in pg.get_attribute('#sendReq', 'href'): err.append(f'{kind}: заявка в Telegram без дня')
+        # Проверка комментария клиента, суммы и нескольких услуг в Telegram-заявке.
+        pg.fill('#bookingComment', 'Без покрытия, удобно после 18:00')
+        draft = spaces(unquote(pg.get_attribute('#sendReq', 'href') or ''))
+        if 'Без покрытия, удобно после 18:00' not in draft:
+            err.append(f'{kind}: Telegram не содержит комментария')
+        if 'Маникюр с гель-лаком' not in draft or '2 500 ₽' not in draft:
+            err.append(f'{kind}: Telegram не содержит цену и название услуги')
+        if not pg.is_enabled('#copyRequest'):
+            err.append(f'{kind}: копирование заказа недоступно')
+        pg.click('#calc [data-tab=pedi]')
+        n = pg.locator('#svcList .nm').count()
+        if n < 3:
+            state = pg.evaluate("""() => ({
+                selected: document.querySelector('#calc [aria-selected="true"]')?.getAttribute('data-tab'),
+                services: document.querySelector('#svcList')?.innerText,
+                calc: !!document.querySelector('#calc'),
+                data: document.querySelector('#site-data')?.textContent?.substring(0,180)
+            })""")
+            err.append(f'{kind}: после выбора педикюра видно только {n} услуг; {state}; errors={pg.errs}')
+        else:
+            pg.click('#svcList .nm >> nth=2')
+        if '5 800' not in spaces(pg.inner_text('#total')):
+            err.append(f'{kind}: неверная сумма двух услуг')
+        if '2 ч 30 мин' not in pg.inner_text('#time'):
+            err.append(f'{kind}: неверная суммарная длительность')
+        draft = spaces(unquote(pg.get_attribute('#sendReq', 'href') or ''))
+        if '5 800' not in draft or '2 ч 30 мин' not in draft:
+            err.append(f'{kind}: цена и время не попали в Telegram-заявку')
+        draft = spaces(unquote(pg.get_attribute('#sendReq', 'href') or ''))
+        if 'Педикюр с гель-лаком' not in draft or 'Маникюр с гель-лаком' not in draft:
+            err.append(f'{kind}: Telegram потерял выбранную услугу')
         pg.click('.hot[data-podo=callus]')
         if 'мозоли' not in pg.inner_text('#podoTitle'): err.append(f'{kind}: точка стопы не работает')
         pg.click('.route-tab[data-route=metro]')
         if pg.get_attribute('#mapBox', 'data-route') != 'metro': err.append(f'{kind}: маршрут не переключается')
-        pg.click('[data-info="Маникюр с гель-лаком"]'); pg.wait_for_timeout(200)
-        if not pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не открылось')
+        pg.click('#calc [data-tab=mani]')
+        info = pg.locator('[data-info="Маникюр с гель-лаком"]')
+        if not info.count():
+            err.append(f'{kind}: кнопка информации не найдена; services='
+                       f'{pg.locator("#svcList").inner_text()}; errors={pg.errs}')
+        else:
+            info.click(); pg.wait_for_timeout(200)
+            if not pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не открылось')
+            else:
+                pg.click('.sheet-close')
+                if pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не закрылось')
         if pg.errs: err.append(f'{kind} interactions: {pg.errs}')
+        pg.close()
+        # Предварительный выбор при переходе из мужского раздела.
+        pg = page(br, 390, 'index.html?service=men-mani#calc')
+        if 'Мужской маникюр' not in pg.inner_text('#lines'):
+            err.append(f'{kind}: мужская услуга не выбрана через ссылку')
+        if 'Стоимость уточняется' not in pg.inner_text('#total'):
+            err.append(f'{kind}: неутверждённая мужская цена показана как окончательная')
+        if pg.errs: err.append(f'{kind} male deep link: {pg.errs}')
         pg.close()
         pg = page(br, 390, 'podarochnyy-sertifikat.html'); pg.fill('#gTo', 'Ане'); pg.click('[data-gift=him]')
         if 'Ане' not in pg.get_attribute('#gOrder', 'href').encode().decode() and '%D0%90%D0%BD%D0%B5' not in pg.get_attribute('#gOrder', 'href'): err.append(f'{kind}: сертификат без имени в заявке')
