@@ -47,6 +47,10 @@ with sync_playwright() as p:
                 if sw > w: err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}')
                 if pg.errs: err.append(f'{kind} {w} {path}: {pg.errs}')
                 if path == 'index.html':
+                    if pg.locator('#works .folio-card').count() != 8:
+                        err.append(f'{kind} {w}: на главной не хватает 8 фотографий портфолио')
+                    if not pg.locator('a[href="raboty.html"]').count():
+                        err.append(f'{kind} {w}: нет перехода в фотогалерею')
                     if pg.locator('.mcta').count() != 0:
                         err.append(f'{kind} {w}: фиксированная плашка записи перекрывает контент')
                     if pg.locator('#foot svg').count() != 0:
@@ -65,6 +69,45 @@ with sync_playwright() as p:
                         pg.locator(f'#{section}').scroll_into_view_if_needed()
                         pg.screenshot(path=str(SNAPSHOTS / f'{kind}-{section}-390.png'), full_page=False)
                 pg.close()
+        # Gallery: inspect actual image loading, category filtering and dialog navigation.
+        gal = page(br, 390, 'raboty.html')
+        cards = gal.locator('.folio-card')
+        if cards.count() != 30:
+            err.append(f'{kind}: ожидалось 30 фотографий, найдено {cards.count()}')
+        if gal.locator('.folio-filter').count() != 5:
+            err.append(f'{kind}: неверное число фильтров портфолио')
+        gal.locator('.folio-card').first.scroll_into_view_if_needed()
+        gal.wait_for_timeout(400)
+        first_img_ok = gal.locator('.folio-card img').first.evaluate('(im) => im.complete && im.naturalWidth > 0')
+        if not first_img_ok:
+            err.append(f'{kind}: локальная миниатюра портфолио не загрузилась')
+        gal.locator('[data-work-filter="pedicure"]').click()
+        if gal.locator('.folio-card:visible').count() != 4:
+            err.append(f'{kind}: фильтр педикюра должен показывать 4 фото')
+        gal.locator('.folio-card:visible').first.click()
+        if not gal.locator('#portfolioViewer').is_visible():
+            err.append(f'{kind}: lightbox не открылся')
+        else:
+            gal.wait_for_function("""() => {
+              const img = document.querySelector('#folioImage');
+              return img && img.complete && img.naturalWidth > 0;
+            }""", timeout=10000)
+            before = gal.locator('#folioCounter').inner_text()
+            gal.keyboard.press('ArrowRight')
+            after = gal.locator('#folioCounter').inner_text()
+            if before == after:
+                err.append(f'{kind}: стрелка в галерее не переключает изображения')
+            gal.screenshot(path=str(SNAPSHOTS / f'{kind}-gallery-lightbox-390.png'), full_page=False)
+            gal.keyboard.press('Escape')
+            if gal.locator('#portfolioViewer').is_visible():
+                err.append(f'{kind}: Escape не закрывает галерею')
+        gal.locator('[data-work-filter="all"]').click()
+        if gal.locator('.folio-card:visible').count() != 30:
+            err.append(f'{kind}: фильтр «Все» не возвращает 30 фотографий')
+        gal.screenshot(path=str(SNAPSHOTS / f'{kind}-gallery-390.png'), full_page=False)
+        if gal.errs: err.append(f'{kind} gallery: {gal.errs}')
+        gal.close()
+
         # Visual regression guard for the mobile-first homepage.
         for mobile_width in (360, 390):
             hp = page(br, mobile_width, 'index.html')
