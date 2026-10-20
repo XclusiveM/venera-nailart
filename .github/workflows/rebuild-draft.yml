@@ -1,0 +1,36 @@
+name: Rebuild draft HTML
+on:
+  push:
+    branches:
+      - audit/booking-fixes-2026-10-20
+    paths:
+      - 'src/**'
+permissions:
+  contents: write
+concurrency:
+  group: rebuild-draft-html
+  cancel-in-progress: false
+jobs:
+  generate:
+    if: github.ref == 'refs/heads/audit/booking-fixes-2026-10-20'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate static HTML
+        run: |
+          python src/build.py
+          python src/build.py --check
+      - name: Commit only generated HTML to draft branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- '*.html'
+          if ! git diff --cached --quiet; then
+            git commit -m "Regenerate draft HTML from site source"
+            git push origin HEAD:audit/booking-fixes-2026-10-20
+          fi
