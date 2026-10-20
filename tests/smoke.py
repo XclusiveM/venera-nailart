@@ -11,6 +11,8 @@ def spaces(value):
 from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = sorted(p.name for p in ROOT.glob('*.html'))
+SNAPSHOTS = ROOT / 'artifacts' / 'screenshots'
+SNAPSHOTS.mkdir(parents=True, exist_ok=True)
 class H(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
 
@@ -43,6 +45,8 @@ with sync_playwright() as p:
                 sw = pg.evaluate('document.documentElement.scrollWidth')
                 if sw > w: err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}')
                 if pg.errs: err.append(f'{kind} {w} {path}: {pg.errs}')
+                if (path == 'index.html' and w in (390, 1440)) or (path == 'muzhskoj-manikyur.html' and w == 390):
+                    pg.screenshot(path=str(SNAPSHOTS / f'{kind}-{path.replace(".html", "")}-{w}.png'), full_page=False)
                 pg.close()
         # Visual regression guard for the mobile-first homepage.
         for mobile_width in (360, 390):
