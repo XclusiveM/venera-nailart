@@ -352,3 +352,92 @@ ol.steps li{margin-bottom:8px}
 .men-page .section .btn:hover{filter:brightness(.94)}
 .men-page .eyebrow{letter-spacing:.12em}
 @media(max-width:600px){.men-page .page-hero::after{font-size:54px;bottom:-.08em}}
+
+
+/* ----- Editorial homepage v3: replace oversized cartoon hero ----- */
+.home-hero{
+  color:#281E25;
+  background:
+    radial-gradient(ellipse 72% 86% at 96% 8%,rgba(205,170,166,.19),transparent 75%),
+    linear-gradient(145deg,#FAF7F3 0%,#F4EAE7 100%);
+  padding:42px 0 48px;
+}
+.home-hero .hero-grid{align-items:center;gap:28px}
+.home-hero .hero-copy{min-width:0}
+.home-hero .hero-location{font-size:11px;letter-spacing:.15em;color:#8C455C;display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.location-dot{display:inline-block;width:7px;height:7px;background:#B13257;border-radius:100%;box-shadow:0 0 0 4px rgba(177,50,87,.09)}
+.home-hero h1{max-width:760px;font-family:var(--serif);font-size:clamp(37px,8.6vw,74px);font-weight:400;line-height:1.12;letter-spacing:-.034em;color:#312029;margin-bottom:20px}
+.home-hero h1 em{display:inline-block;font-style:normal;color:#9B3653}
+.home-hero .lead{font-size:clamp(15px,3.8vw,18px);line-height:1.63;color:#594F55;max-width:610px;margin-bottom:22px}
+.home-hero .hero-facts{gap:10px;margin-bottom:28px}
+.home-hero .hero-facts li{color:#694C59;border:1px solid #E3CED3;background:rgba(255,255,255,.58);font-size:13px;padding:8px 12px}
+.home-hero .hero-actions{display:flex;align-items:center;flex-wrap:wrap;gap:20px}
+.home-hero .hero-primary{background:#A4214D;color:#fff;min-height:50px;padding:0 22px;border-radius:12px;font-size:15px;box-shadow:0 8px 20px rgba(135,33,67,.12)}
+.home-hero .hero-primary:hover{background:#7A1838;color:#fff}
+.home-hero .hero-primary span{margin-left:6px;font-size:18px;font-weight:400}
+.home-hero .hero-textlink{font-size:14px;font-weight:600;text-decoration:none;color:#7E2948;border-bottom:1px solid #B7929F;padding:4px 0}
+.home-hero .hero-textlink span{padding-left:7px}
+.home-hero .hero-textlink:focus-visible{outline:3px solid #A4214D}
+.home-hero .hero-editorial{background:#E7D5D1;border-radius:2px 80px 2px 2px;position:relative;min-height:380px;overflow:hidden;box-shadow:22px 24px 0 rgba(152,103,116,.08)}
+.home-editorial-spacer{display:none}
+.hero-editorial::before{content:"";position:absolute;width:340px;height:340px;border:1px solid rgba(123,60,79,.18);border-radius:50%;right:-135px;top:50px}
+.hero-editorial::after{content:"";position:absolute;width:300px;height:300px;border:1px solid rgba(123,60,79,.11);border-radius:50%;right:-85px;top:95px}
+.hero-editorial-inner{position:relative;z-index:1;min-height:380px;padding:30px;display:flex;flex-direction:column;justify-content:space-between}
+.hero-editorial-top,.hero-editorial-bottom{display:flex;justify-content:space-between;align-items:flex-start;gap:15px}
+.hero-editorial-top span:first-child{font-family:var(--serif);font-size:27px;letter-spacing:-.1em;color:#82374D}
+.hero-editorial-top span:last-child{font-size:10px;line-height:1.5;letter-spacing:.17em;font-weight:600;text-align:right;color:#8A5662}
+.hero-editorial-main{margin:auto 0;padding:40px 0}
+.hero-editorial-main>span{font-size:10px;letter-spacing:.21em;font-weight:600;color:#884E5D}
+.hero-editorial-main p{font-family:var(--serif);font-size:clamp(40px,5vw,72px);line-height:1.07;letter-spacing:-.04em;color:#672D43;margin:12px 0 0}
+.hero-editorial-main p i{font-style:normal;color:#AD526C}
+.hero-editorial-bottom{align-items:center}
+.hero-editorial-bottom>span{font-size:10px;color:#875462;font-weight:600;letter-spacing:.12em}
+.hero-swatch-row{display:flex;gap:6px}
+.hero-swatch-row i{width:33px;height:33px;border-radius:50%;display:block;background:var(--sw);border:2px solid rgba(255,255,255,.6)}
+.quick-prices{background:#fff;border-top:1px solid #EBDEE2;border-bottom:1px solid #EBDEE2}
+.quick-prices-inner{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+.quick-prices a{display:flex;gap:12px;flex-wrap:wrap;align-items:baseline;justify-content:space-between;padding:21px 22px;text-decoration:none;color:#47303D;border-right:1px solid #EEE3E7}
+.quick-prices a:first-child{padding-left:0}
+.quick-prices a:last-child{border-right:0;padding-right:0}
+.quick-prices a:hover span{text-decoration:underline;text-underline-offset:4px}
+.quick-prices span{font-size:14px;color:#6B5D62}
+.quick-prices strong{font-size:15px;white-space:nowrap;color:#8F2B4B}
+@media(max-width:899px){
+  .home-hero .hero-editorial{min-height:245px;border-radius:2px 55px 2px 2px}
+  .home-hero .hero-editorial-inner{min-height:245px;padding:22px}
+  .home-hero .hero-editorial-main{padding:16px 0}
+  .hero-editorial-main p{font-size:44px}
+}
+@media(max-width:599px){
+  :root{--sec:48px}
+  .home-hero{padding:34px 0 38px}
+  .home-hero .hero-grid{gap:28px}
+  .home-hero .hero-location{margin-bottom:19px;font-size:10px}
+  .home-hero h1{font-size:clamp(35px,9.1vw,49px);letter-spacing:-.025em;line-height:1.12;margin-bottom:18px}
+  .home-hero .lead{font-size:15px;line-height:1.55;margin-bottom:18px}
+  .home-hero .hero-facts{margin-bottom:22px;gap:8px}
+  .home-hero .hero-facts li{font-size:12px;padding:6px 10px}
+  .home-hero .hero-actions{gap:17px}
+  .home-hero .hero-primary{min-height:48px;font-size:14px;padding:0 17px}
+  .home-hero .hero-textlink{font-size:13px}
+  .home-hero .hero-editorial{min-height:182px;border-radius:3px 42px 3px 3px;box-shadow:none}
+  .home-hero .hero-editorial-inner{min-height:182px;padding:18px 22px}
+  .home-hero .hero-editorial-top span:first-child{font-size:21px}
+  .home-hero .hero-editorial-main{padding:11px 0}
+  .hero-editorial-main>span{font-size:8px}
+  .hero-editorial-main p{font-size:34px;margin-top:4px}
+  .hero-editorial-bottom>span{font-size:9px}
+  .hero-swatch-row i{width:20px;height:20px;border-width:1px}
+  .quick-prices-inner{grid-template-columns:1fr}
+  .quick-prices a,.quick-prices a:first-child,.quick-prices a:last-child{padding:12px 0;flex-wrap:nowrap;border-right:0;border-bottom:1px solid #EEE3E7}
+  .quick-prices a:last-child{border-bottom:0}
+  .quick-prices span{font-size:13px}
+  .quick-prices strong{font-size:14px}
+  .top .wrap{gap:8px}
+  .top .brand b{font-size:24px}
+  .top .brand small{letter-spacing:.14em;font-size:9px}
+  .top .btn{font-size:13px;padding:0 12px;min-height:40px}
+  .top .icon-btn{width:40px;height:40px}
+  .top .menu-btn{flex:0 0 40px}
+}
+@media(max-width:359px){.top .btn{display:none}.home-hero h1{font-size:35px}.home-hero .hero-actions{gap:13px}}
