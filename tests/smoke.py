@@ -26,6 +26,7 @@ err = []
 def page(br, w, path):
     pg = br.new_page(viewport={'width': w, 'height': 844}); pg.errs = []
     pg.on('pageerror', lambda e: pg.errs.append(str(e)))
+    pg.on('console', lambda m: pg.errs.append('console: '+m.text) if m.type == 'error' else None)
     pg.route('**/*', lambda r: r.continue_() if r.request.url.startswith(B) or r.request.url.startswith(('data:', 'blob:')) else r.abort())
     pg.goto(B + path); pg.wait_for_timeout(300); return pg
 
@@ -82,7 +83,17 @@ with sync_playwright() as p:
         if not pg.is_enabled('#copyRequest'):
             err.append(f'{kind}: копирование заказа недоступно')
         pg.click('#calc [data-tab=pedi]')
-        pg.click('#svcList .nm >> nth=2')
+        n = pg.locator('#svcList .nm').count()
+        if n < 3:
+            state = pg.evaluate("""() => ({
+                selected: document.querySelector('#calc [aria-selected="true"]')?.getAttribute('data-tab'),
+                services: document.querySelector('#svcList')?.innerText,
+                calc: !!document.querySelector('#calc'),
+                data: document.querySelector('#site-data')?.textContent?.substring(0,180)
+            })""")
+            err.append(f'{kind}: после выбора педикюра видно только {n} услуг; {state}; errors={pg.errs}')
+        else:
+            pg.click('#svcList .nm >> nth=2')
         if '5 800' not in spaces(pg.inner_text('#total')):
             err.append(f'{kind}: неверная сумма двух услуг')
         if '2 ч 30 мин' not in pg.inner_text('#time'):
