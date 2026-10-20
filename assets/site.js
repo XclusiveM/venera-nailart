@@ -228,7 +228,7 @@
       send.href = tgUrl(message); send.removeAttribute('aria-disabled'); copyBtn.disabled = false;
     }
     reset.addEventListener('click', function () { picks = {}; extras = {}; render(); });
-    $('.tab', root).forEach(function (b) {
+    $$('.tab', root).forEach(function (b) {
       b.addEventListener('click', function () { tab = b.dataset.tab; render(); });
     });
     $$('.extra', root).forEach(function (b) {
