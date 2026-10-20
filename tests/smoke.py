@@ -4,6 +4,10 @@ import http.server, os, socketserver, sys, threading
 from functools import partial
 from pathlib import Path
 from urllib.parse import unquote
+
+
+def spaces(value):
+    return value.replace(chr(160), ' ').replace(chr(8239), ' ')
 from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = sorted(p.name for p in ROOT.glob('*.html'))
@@ -51,7 +55,7 @@ with sync_playwright() as p:
         if '%D0%B7%D0%B0%D0%B2%D1%82%D1%80%D0%B0' not in pg.get_attribute('#sendReq', 'href'): err.append(f'{kind}: заявка в Telegram без дня')
         # Проверка комментария клиента, суммы и нескольких услуг в Telegram-заявке.
         pg.fill('#bookingComment', 'Без покрытия, удобно после 18:00')
-        draft = unquote(pg.get_attribute('#sendReq', 'href') or '')
+        draft = spaces(unquote(pg.get_attribute('#sendReq', 'href') or ''))
         if 'Без покрытия, удобно после 18:00' not in draft:
             err.append(f'{kind}: Telegram не содержит комментария')
         if 'Маникюр с гель-лаком' not in draft or '2 500 ₽' not in draft:
@@ -60,9 +64,9 @@ with sync_playwright() as p:
             err.append(f'{kind}: копирование заказа недоступно')
         pg.click('#calc [data-tab=pedi]')
         pg.click('#svcList .nm >> nth=2')
-        if '5 800' not in pg.inner_text('#total').replace('\u00a0', ' '):
+        if '5 800' not in spaces(pg.inner_text('#total')):
             err.append(f'{kind}: неверная сумма двух услуг')
-        draft = unquote(pg.get_attribute('#sendReq', 'href') or '')
+        draft = spaces(unquote(pg.get_attribute('#sendReq', 'href') or ''))
         if 'Педикюр с гель-лаком' not in draft or 'Маникюр с гель-лаком' not in draft:
             err.append(f'{kind}: Telegram потерял выбранную услугу')
         pg.click('.hot[data-podo=callus]')
