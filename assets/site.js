@@ -438,7 +438,8 @@
   safe('portfolio', function () {
     var items = json('portfolio-data');
     var dialog = $('#portfolioViewer'), img = $('#folioImage');
-    var cards = $('[data-work-index]');
+    var cards = Array.prototype.slice.call(document.querySelectorAll('[data-work-index]'));
+    var filterButtons = Array.prototype.slice.call(document.querySelectorAll('[data-work-filter]'));
     if (!dialog || !img || !Array.isArray(items) || !items.length || !cards.length) return;
     var counter = $('#folioCounter'), caption = $('#folioCaption');
     var trigger = null, current = -1, swipeStart = null, sourceTicket = 0;
@@ -518,10 +519,10 @@
       swipeStart=null;
       if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)*1.25) move(dx > 0 ? -1 : 1);
     }, {passive:true});
-    $('[data-work-filter]').forEach(function (b) {
+    filterButtons.forEach(function (b) {
       b.addEventListener('click', function () {
         var category=b.dataset.workFilter;
-        $('[data-work-filter]').forEach(function (other) {
+        filterButtons.forEach(function (other) {
           other.setAttribute('aria-pressed', String(other === b));
         });
         cards.forEach(function (card) {
