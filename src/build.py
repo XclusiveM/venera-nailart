@@ -366,11 +366,11 @@ index += f'''<section class="hero home-hero"><div class="wrap hero-grid">
 <a href="manikyur.html"><span>Маникюр без покрытия</span><strong>{rub(svc('mani-plain')['price'])}</strong></a>
 <a href="manikyur.html"><span>С гель-лаком</span><strong>{rub(svc('mani-gel')['price'])}</strong></a>
 <a href="pedikyur.html"><span>Педикюр</span><strong>от {rub(svc('smart')['price'])}</strong></a>
-</div></div>
+</div><p class="price-source-note wrap">Цены приведены по прайсу Венеры в Bumpix. У других мастеров стоимость и длительность могут отличаться.</p></div>
 '''
 index += section(f'<div class="section-head"><span class="eyebrow">Услуги</span><h2>Что можно сделать</h2></div>{cards_html}', 'alt', 'services')
 index += section(booking_profiles_block(), '', 'specialists')
-index += section(f'''<div class="section-head"><span class="eyebrow">Цены</span><h2>Сколько стоит и сколько займёт</h2><p class="muted">Выберите услугу: сумма и время посчитаются сразу. Значок «i» расскажет, что это за процедура.</p></div>
+index += section(f'''<div class="section-head"><span class="eyebrow">Цены</span><h2>Сколько стоит и сколько займёт</h2><p class="muted">Составьте предварительный список: сумма и время рассчитываются по прайсу Венеры. У других мастеров условия могут отличаться. Кнопка «i» объясняет процедуру.</p></div>
 <div class="calc" id="calc">
 <div><div class="tabs" role="tablist" aria-label="Категория">{"".join(f'<button class="tab" role="tab" type="button" data-tab="{c["id"]}" aria-selected="{"true" if c["id"] == "mani" else "false"}">{c["title"]}</button>' for c in D["categories"])}</div>
 <div class="svc-list" id="svcList" role="group" aria-label="Выбор услуг"></div>
@@ -430,7 +430,7 @@ def service_page(path, crumb, title, desc, h1, lead, tgtext, ids, body, faq, tip
     if path == 'muzhskoj-manikyur.html':
         s = s.replace('<body>', '<body class="men-page">', 1)
     s += page_hero(crumb, h1, lead, tgtext)
-    s += section(f'<div class="grid-2"><div><span class="eyebrow">Цены</span><h2>Стоимость</h2>{price_table(ids)}<p class="note" style="margin-top:10px">Цены из онлайн-записи.{" Стоимость дизайна мастер подскажет на месте." if path in ("manikyur.html", "narashchivanie-nogtey.html") else ""}</p></div><div>{body[0]}</div></div>')
+    s += section(f'<div class="grid-2"><div><span class="eyebrow">Цены</span><h2>Стоимость</h2>{price_table(ids)}<p class="note" style="margin-top:10px">Цены по прайсу Венеры в Bumpix. У другого мастера уточняйте стоимость перед записью.{" Стоимость дизайна мастер подскажет на месте." if path in ("manikyur.html", "narashchivanie-nogtey.html") else ""}</p></div><div>{body[0]}</div></div>')
     for b in body[1:]:
         s += section(b, 'alt' if body.index(b) % 2 else '')
     if tips:
