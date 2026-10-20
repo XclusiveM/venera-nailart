@@ -85,7 +85,7 @@ with sync_playwright() as p:
             pg.click('#svcList button.nm >> nth=0')
         pg.click('#calc [data-tab=pedi]')
         pg.get_by_role('checkbox', name='Добавить Педикюр с гель-лаком').click()
-        if '5 800' not in pg.inner_text('#total') and '5\\u00a0800' not in pg.inner_text('#total'):
+        if '5 800' not in pg.inner_text('#total').replace('\u00a0', ' ').replace('\u202f', ' '):
             err.append(f'{kind}: суммарная цена двух услуг не равна 5 800 ₽')
         if '2 ч 30 мин' not in pg.inner_text('#time'):
             err.append(f'{kind}: неверная суммарная длительность двух услуг')
@@ -93,6 +93,7 @@ with sync_playwright() as p:
         from urllib.parse import urlparse, parse_qs
         u = pg.get_attribute('#sendReq', 'href') or ''
         m = parse_qs(urlparse(u).query).get('text', [''])[0]
+        m = m.replace('\u00a0', ' ').replace('\u202f', ' ')
         for part in ('Маникюр с гель-лаком', 'Педикюр с гель-лаком', '5 800', '2 ч 30 мин', 'Тест: молочный цвет'):
             if part not in m: err.append(f'{kind}: Telegram-заявка потеряла {part}')
         if not pg.locator('#copyRequest').is_visible():
