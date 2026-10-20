@@ -73,6 +73,7 @@ with sync_playwright() as p:
         if 'мозоли' not in pg.inner_text('#podoTitle'): err.append(f'{kind}: точка стопы не работает')
         pg.click('.route-tab[data-route=metro]')
         if pg.get_attribute('#mapBox', 'data-route') != 'metro': err.append(f'{kind}: маршрут не переключается')
+        pg.click('#calc [data-tab=mani]')
         pg.click('[data-info="Маникюр с гель-лаком"]'); pg.wait_for_timeout(200)
         if not pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не открылось')
         if pg.errs: err.append(f'{kind} interactions: {pg.errs}')
