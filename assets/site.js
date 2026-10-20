@@ -93,6 +93,13 @@
       picks.mani = 'mani-gel';
     }
 
+    var banner = document.createElement('div'); banner.className = 'booking-selection';
+    banner.setAttribute('role', 'status');
+    var selectionText = document.createElement('strong'); selectionText.id = 'selectionText';
+    var reset = document.createElement('button'); reset.type = 'button'; reset.className = 'booking-reset';
+    reset.textContent = 'Сбросить выбор'; reset.setAttribute('aria-label', 'Убрать выбранные услуги');
+    banner.append(selectionText, reset); list.parentNode.insertBefore(banner, list);
+
     var send = $('#sendReq');
     var wrap = document.createElement('div'); wrap.className = 'booking-entry';
     var lab = document.createElement('label'); lab.htmlFor = 'bookingComment'; lab.textContent = 'Пожелания и комментарий';
@@ -199,6 +206,9 @@
     }
     function recalc() {
       var t = totals(), lines = $('#lines'), total = $('#total'), time = $('#time');
+      var names = t.services.map(function (item) { return item.name; });
+      selectionText.textContent = names.length ? ('Выбрано (' + names.length + '): ' + names.join(' + ')) : 'Услуги не выбраны';
+      reset.hidden = !names.length;
       lines.textContent = '';
       function line(a, b) {
         var li = document.createElement('li'), x = document.createElement('span'), y = document.createElement('span');
@@ -217,7 +227,8 @@
       message = buildMessage(t);
       send.href = tgUrl(message); send.removeAttribute('aria-disabled'); copyBtn.disabled = false;
     }
-    $$('.tab', root).forEach(function (b) {
+    reset.addEventListener('click', function () { picks = {}; extras = {}; render(); });
+    $('.tab', root).forEach(function (b) {
       b.addEventListener('click', function () { tab = b.dataset.tab; render(); });
     });
     $$('.extra', root).forEach(function (b) {
@@ -316,12 +327,12 @@
   /* ---------- Подология ---------- */
   safe('podo', function () {
     var foot = $('#foot'); if (!foot) return;
-    var MAP = { ingrown: ['Обработка вросшего ногтя', 'Мягко освобождаем край ногтя, который врастает в кожу и мешает ходить.'],
+    var MAP = { ingrown: ['Обработка вросшего ногтя', 'Если ноготь врастает, есть боль или воспаление, сначала требуется медицинская оценка. Возможность последующего ухода обсудите со специалистом.'],
       toes: ['Обработка пальчиков', 'Кожа вокруг ногтей и между пальцами, утолщённые ногти.'],
-      callus: ['Обработка мозоли', 'Убираем мозоль и снимаем давление, чтобы было комфортно в обуви.'],
-      feet: ['Обработка стоп', 'Огрубевшая кожа и трещины на пятках.'],
-      system: ['Коррекционная система', 'Помогает ногтю расти ровно, если он врастает снова и снова.'],
-      consult: ['Консультация', 'Мастер осмотрит стопы и подскажет, какая процедура нужна.'] };
+      callus: ['Обработка мозоли', 'Уход за участками огрубевшей кожи. При боли, повреждении кожи или воспалении сначала обратитесь к врачу.'],
+      feet: ['Обработка стоп', 'Косметический уход за огрубевшей кожей. Болезненные или глубокие трещины требуют врачебного осмотра.'],
+      system: ['Коррекционная система', 'Метод коррекции ногтевой пластины. Возможность и правомерность услуги уточняйте у специалиста.'],
+      consult: ['Консультация', 'Мастер расскажет о доступном косметическом уходе. Диагностика и лечение заболеваний требуют обращения к врачу.'] };
     var curName = MAP.ingrown[0];
     function show(k) {
       var m = MAP[k]; if (!m) return; var s = find(m[0]); curName = m[0];
@@ -336,7 +347,7 @@
         $$('#footQuiz .chip').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
         var ans = $('#footAns'), f = b.dataset.f;
         if (f === 'doctor') { ans.className = 'ans red'; ans.textContent = 'Сильная боль, гной или отёк — повод сначала показаться врачу. После лечения мастер поможет с уходом.'; return; }
-        show(f); var s = find(MAP[f][0]); ans.className = 'ans'; ans.textContent = 'Похоже, подойдёт «' + MAP[f][0] + '», ' + fmt(s && s.price) + '. Карточка выше обновилась.'; goal('foot_quiz');
+        show(f); var s = find(MAP[f][0]); ans.className = 'ans'; ans.textContent = 'Вы выбрали тему «' + MAP[f][0] + '». Описание и ориентир из прайса показаны выше. При жалобах на боль или воспаление — к врачу.'; goal('foot_quiz');
       });
     });
     show('ingrown');
@@ -355,24 +366,6 @@
     var live = $('#mapLive'), btn = $('#mapBtn');
     if (btn && live) btn.addEventListener('click', function () { var f = $('iframe', live); if (!f.src) f.src = f.dataset.src; live.hidden = false; goal('map_open'); });
     var cl = $('#mapClose'); if (cl) cl.addEventListener('click', function () { live.hidden = true; });
-  });
-
-  /* ---------- Напоминание в календарь ---------- */
-  function pad(n) { return String(n).padStart(2, '0'); }
-  function icsDate(d) { return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00'; }
-  safe('remind', function () {
-    $$('[data-remind]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var d = new Date(); d.setDate(d.getDate() + (+b.dataset.remind)); d.setHours(10, 0, 0, 0);
-        var end = new Date(d.getTime() + 30 * 60000), title = 'Пора на ' + b.dataset.what;
-        var ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Venera//RU', 'BEGIN:VEVENT', 'UID:' + Date.now() + '@venera', 'DTSTAMP:' + icsDate(new Date()), 'DTSTART:' + icsDate(d), 'DTEND:' + icsDate(end),
-          'SUMMARY:' + title, 'DESCRIPTION:Запись онлайн: ' + CFG.book, 'URL:' + CFG.book, 'LOCATION:Москва\\, ' + CFG.addr.replace(/,/g, '\\,'),
-          'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:' + title, 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-        var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' })); a.download = 'napominanie.ics';
-        document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-        say('Файл календаря скачан. Откройте его, и напоминание добавится'); goal('reminder');
-      });
-    });
   });
 
   /* ---------- Посоветовать подруге ---------- */
