@@ -337,7 +337,11 @@
     function show(k) {
       var m = MAP[k]; if (!m) return; var s = find(m[0]); curName = m[0];
       $('#podoTitle').textContent = m[0]; $('#podoText').textContent = m[1];
-      $('#podoPrice').textContent = s ? fmt(s.price) : ''; $('#podoTime').textContent = s ? dur(s.min) : '';
+      var needsDoctor = k === 'ingrown' || k === 'system';
+      $('#podoPrice').textContent = needsDoctor ? 'Уточняется' : (s ? fmt(s.price) : '');
+      $('#podoTime').textContent = needsDoctor ? 'после консультации' : (s ? dur(s.min) : '');
+      var book = $('.podo-card .actions a.btn');
+      if (book) book.hidden = needsDoctor;
       $$('.hot', foot).forEach(function (h) { h.setAttribute('aria-pressed', String(h.dataset.podo === k)); });
     }
     $$('.hot', foot).forEach(function (h) { h.addEventListener('click', function () { show(h.dataset.podo); }); });
@@ -350,7 +354,7 @@
         show(f); var s = find(MAP[f][0]); ans.className = 'ans'; ans.textContent = 'Вы выбрали тему «' + MAP[f][0] + '». Описание и ориентир из прайса показаны выше. При жалобах на боль или воспаление — к врачу.'; goal('foot_quiz');
       });
     });
-    show('ingrown');
+    show('feet');
   });
 
   /* ---------- Маршруты и карта ---------- */
