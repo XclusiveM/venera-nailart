@@ -490,9 +490,9 @@ index += foot()
 PAGES['index.html'] = index
 
 # Full gallery has its own URL, filters and accessible lightbox; linked from home and navigation.
-gallery_page = head('Работы маникюра и педикюра — фото | ВенераNAILART, Новые Ватутинки',
-    'Фотографии маникюра, педикюра и ногтевой студии ВенераNAILART в Новых Ватутинках. Портфолио и запись к мастерам.',
-    'raboty.html')
+gallery_page = head('Фото маникюра и педикюра — работы студии Венера в Новых Ватутинках',
+    'Фотографии маникюра, педикюра и интерьера студии Венера в Новых Ватутинках. Портфолио, реальные фото и онлайн-запись.',
+    'raboty.html', salon_ld())
 gallery_page += portfolio_full_page()
 gallery_page += foot()
 PAGES['raboty.html'] = gallery_page
