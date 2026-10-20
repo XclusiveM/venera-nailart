@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'src'
 D = json.loads((SRC / 'data.json').read_text(encoding='utf-8'))
 INFO = json.loads((SRC / 'info.json').read_text(encoding='utf-8'))
+PORTFOLIO = json.loads((SRC / 'portfolio.json').read_text(encoding='utf-8'))
+WORKS = PORTFOLIO['photos']
 B = D['business']
 SVC = D['services']
 PROFILES = D.get('booking_profiles', [])
@@ -106,7 +108,7 @@ def hand_svg(shape='almond', interactive=False, uid='h'):
 
 
 # ---------------------------------------------------------------- layout
-NAV = [('index.html#services', 'Услуги'), ('ceny.html', 'Цены'), ('podolog-novye-vatutinki.html', 'Подология'),
+NAV = [('index.html#services', 'Услуги'), ('raboty.html', 'Работы'), ('ceny.html', 'Цены'), ('podolog-novye-vatutinki.html', 'Подология'),
        ('muzhskoj-manikyur.html', 'Мужской'), ('podarochnyy-sertifikat.html', 'Сертификаты'), ('kontakty.html', 'Контакты')]
 
 
@@ -156,6 +158,7 @@ def foot():
     legal = ''
     if lg['ip_name'] and lg['ogrnip']:
         legal = f"<p>ИП {E(lg['ip_name'])}, ОГРНИП {E(lg['ogrnip'])}{', ИНН ' + E(lg['inn']) if lg['inn'] else ''}</p>"
+    work_json = json.dumps([{k:p[k] for k in ('id','title','category','thumb','full')} for p in WORKS], ensure_ascii=False)
     cfg = {'book': B['book_url'], 'tg': B['telegram'], 'metrika': B.get('metrika_id', ''), 'addr': ADDR,
            'services': SVC, 'extras': D['extras'], 'cats': D['categories']}
     return f'''</main>
@@ -164,11 +167,22 @@ def foot():
 <div><a class="brand" href="index.html"><b>Венера</b><small>ногтевая студия</small></a>
 <p>Москва, {E(ADDR)}, {B['postal']}<br>5 минут пешком от ТЦ «Лайнер»</p>
 <p><a href="tel:{B['phone_href']}">{B['phone']}</a><br>{E(B['hours'] or B['hours_note'])}</p></div>
-<ul class="foot-links"><li><a href="manikyur.html">Маникюр</a></li><li><a href="pedikyur.html">Педикюр</a></li><li><a href="narashchivanie-nogtey.html">Наращивание</a></li><li><a href="podolog-novye-vatutinki.html">Подолог</a></li><li><a href="vrosshij-nogot.html">Вросший ноготь</a></li><li><a href="muzhskoj-manikyur.html">Мужской маникюр</a></li></ul>
+<ul class="foot-links"><li><a href="raboty.html">Работы студии</a></li><li><a href="manikyur.html">Маникюр</a></li><li><a href="pedikyur.html">Педикюр</a></li><li><a href="narashchivanie-nogtey.html">Наращивание</a></li><li><a href="podolog-novye-vatutinki.html">Подолог</a></li><li><a href="vrosshij-nogot.html">Вросший ноготь</a></li><li><a href="muzhskoj-manikyur.html">Мужской маникюр</a></li></ul>
 <ul class="foot-links"><li><a href="{BOOK_ROUTE}">Онлайн-запись</a></li><li><a href="https://t.me/{B['telegram']}" target="_blank" rel="noopener">Telegram</a></li><li><a href="{B['yandex_org']}" target="_blank" rel="noopener">Яндекс Карты</a></li><li><a href="ceny.html">Все цены</a></li><li><a href="podarochnyy-sertifikat.html">Сертификаты</a></li><li><a href="kontakty.html">Контакты</a></li></ul>
 </div>
 <div class="foot-legal">{legal}<p><a href="politika.html">Политика обработки персональных данных</a> · <a href="soglasie.html">Согласие на обработку данных</a></p></div>
 </div></footer>
+
+<dialog class="folio-dialog" id="portfolioViewer" aria-label="Просмотр фотографии" aria-modal="true">
+<div class="folio-viewer">
+<button class="folio-close" type="button" aria-label="Закрыть просмотр">✕</button>
+<button class="folio-nav folio-prev" type="button" aria-label="Предыдущая фотография">‹</button>
+<div class="folio-visual"><img id="folioImage" alt=""><div class="folio-spinner" aria-hidden="true"></div></div>
+<button class="folio-nav folio-next" type="button" aria-label="Следующая фотография">›</button>
+<div class="folio-viewer-caption"><div><span id="folioCounter"></span><strong id="folioCaption"></strong></div><span>ВенераNAILART</span></div>
+</div>
+</dialog>
+<script type="application/json" id="portfolio-data">{work_json}</script>
 
 <dialog class="sheet" id="sheet" aria-labelledby="sheetTitle"><div class="sheet-in"><button class="sheet-close" type="button" aria-label="Закрыть">✕</button><div id="sheetBody"></div></div></dialog>
 <div class="consent" id="consent" hidden></div>
@@ -259,6 +273,64 @@ def booking_profiles_block():
             '<div class="specialist-grid">' + ''.join(cards) + '</div>'
             '<p class="note specialist-note">Состав команды может изменяться. Мы обновляем ссылки на действующие профили.</p>')
 
+
+
+
+# ---------------------------------------------------------------- image portfolio
+GALLERY_CATS = {'manicure': 'Маникюр', 'pedicure': 'Педикюр',
+                'interior': 'Студия', 'entrance': 'Как нас найти'}
+
+def portfolio_tile(item, index, priority=False):
+    category = item['category']
+    title = E(item['title'])
+    label = E(GALLERY_CATS[category])
+    alt = E(f'Фото из галереи ВенераNAILART: {item["title"].lower()}')
+    return (f'<button class="folio-card" type="button" data-work-index="{index}" data-work-kind="{category}"'
+            f' aria-label="Увеличить фото: {title}">'
+            f'<img src="{E(item["thumb"])}" alt="{alt}" width="768" height="1024"'
+            f' loading="{"eager" if priority else "lazy"}" decoding="async">'
+            f'<span class="folio-card-caption"><small>{label}</small><strong>{title}</strong>'
+            f'<span aria-hidden="true" class="folio-zoom">↗</span></span></button>')
+
+def portfolio_preview(category=None, size=8):
+    selected = [(i, p) for i, p in enumerate(WORKS)
+                if (not category or p["category"] == category)]
+    if category is None:
+        selected = [(i, p) for i, p in selected if p.get('featured')]
+    selected = selected[:size]
+    cards = ''.join(portfolio_tile(p,i,n<2) for n,(i,p) in enumerate(selected))
+    title = 'Реальные фотографии из альбома студии' if category is None else 'Фотографии из альбома студии'
+    subtitle = ('Маникюр, педикюр и атмосфера ВенераNAILART. '
+                'Снимки из публичной карточки студии в Яндекс Картах.')
+    return (f'<div class="folio-heading"><div><span class="eyebrow">Портфолио</span>'
+            f'<h2>{title}</h2><p class="muted">{subtitle}</p></div>'
+            f'<a class="folio-all-link" href="raboty.html">Все фотографии <span aria-hidden="true">↗</span></a></div>'
+            f'<div class="folio-grid folio-preview">{cards}</div>'
+            f'<div class="folio-bottom"><a class="btn btn-line" href="raboty.html">Смотреть все фотографии →</a></div>')
+
+def portfolio_full_page():
+    filter_text = [('all','Все фотографии'),('manicure','Маникюр'),
+                   ('pedicure','Педикюр'),('interior','Студия'),('entrance','Вход')]
+    filters = ''.join(
+        f'<button type="button" class="folio-filter" data-work-filter="{kind}"'
+        f' aria-pressed="{"true" if kind=="all" else "false"}">{label}'
+        f' <span>{len(WORKS) if kind=="all" else sum(p["category"]==kind for p in WORKS)}</span></button>'
+        for kind,label in filter_text
+    )
+    cards = ''.join(portfolio_tile(p,i,i<2) for i,p in enumerate(WORKS))
+    top = ('<div class="folio-page-head"><nav class="crumbs" aria-label="Навигация">'
+           '<a href="index.html">Главная</a> / Работы</nav>'
+           '<span class="eyebrow">ВенераNAILART · Новые Ватутинки</span>'
+           '<h1>Работы и атмосфера студии</h1>'
+           '<p class="lead">Маникюр, педикюр и фотографии кабинета. '
+           'Выберите категорию и нажмите на фотографию, чтобы рассмотреть её.</p></div>')
+    notice = ('<p class="folio-source-note">Фотографии получены из публичного фотоальбома '
+              '<a href="https://yandex.ru/navi/org/veneranailart/213918968490" target="_blank" rel="noopener noreferrer">'
+              'ВенераNAILART на Яндекс Картах</a>. Авторство отдельных снимков уточняется.</p>')
+    return (section(top, 'folio-intro', 'gallery-intro') +
+            section(f'<div class="folio-filters" aria-label="Категории фотографий">'
+                    f'{filters}</div><div class="folio-grid folio-full">{cards}</div>{notice}',
+                    'alt', 'gallery-photos'))
 
 def section(inner, cls='', id_=''):
     return f'<section class="section {cls}"{f" id={chr(34)}{id_}{chr(34)}" if id_ else ""}><div class="wrap">{inner}</div></section>'
@@ -361,7 +433,8 @@ index += f'''<section class="hero home-hero"><div class="wrap hero-grid">
 <a href="pedikyur.html"><span>Педикюр</span><strong>от {rub(svc('smart')['price'])}</strong></a>
 </div><p class="price-source-note wrap">Цены приведены по прайсу Венеры в Bumpix. У других мастеров стоимость и длительность могут отличаться.</p></div>
 '''
-index += section(f'<div class="section-head"><span class="eyebrow">Услуги</span><h2>Что можно сделать</h2></div>{cards_html}', 'alt', 'services')
+index += section(portfolio_preview(), '', 'works')
+index += section(f'<div class="section-head"><span class="eyebrow">Услуги</span<h2>Что можно сделать</h2></div>{cards_html}', 'alt', 'services')
 index += section(booking_profiles_block(), '', 'specialists')
 index += section(f'''<div class="section-head"><span class="eyebrow">Цены</span><h2>Сколько стоит и сколько займёт</h2><p class="muted">Составьте предварительный список: сумма и время рассчитываются по прайсу Венеры. У других мастеров условия могут отличаться. Кнопка «i» объясняет процедуру.</p></div>
 <div class="calc" id="calc">
@@ -415,6 +488,14 @@ index += section(f'''<div class="grid-2"><div><span class="eyebrow">Вопрос
 {faq_html(HOME_FAQ)}</div>''', 'alt', 'faq')
 index += foot()
 PAGES['index.html'] = index
+
+# Full gallery has its own URL, filters and accessible lightbox; linked from home and navigation.
+gallery_page = head('Работы маникюра и педикюра — фото | ВенераNAILART, Новые Ватутинки',
+    'Фотографии маникюра, педикюра и ногтевой студии ВенераNAILART в Новых Ватутинках. Портфолио и запись к мастерам.',
+    'raboty.html')
+gallery_page += portfolio_full_page()
+gallery_page += foot()
+PAGES['raboty.html'] = gallery_page
 
 
 # ====== service pages
