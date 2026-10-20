@@ -308,7 +308,7 @@
     var qb = $('#quizBtn'); if (!qb) return;
     qb.addEventListener('click', function () {
       var a = {};
-      openSheet('<h3 id="sheetTitle">Подберём форму и оттенок</h3>' + Q.map(function (q) { return '<div class="q-step"><div class="ctl-label">' + q[1] + '</div><div class="chips" data-q="' + q[0] + '">' + q[2].map(function (o) { return '<button class="chip" type="button" data-v="' + o[0] + '" aria-pressed="false">' + o[1] + '</button>'; }).join('') + '</div></div>'; }).join('') + '<div id="qRes" hidden><p>Попробуйте: <b id="qPick"></b></p><p class="muted" id="qWhy"></p><button class="btn" type="button" id="qShow">Показать на руке</button></div>');
+      openSheet('<h3 id="sheetTitle">Подберём форму и оттенок</h3>' + Q.map(function (q) { return '<div class="q-step"><div class="ctl-label">' + q[1] + '</div><div class="chips" data-q="' + q[0] + '">' + q[2].map(function (o) { return '<button class="chip" type="button" data-v="' + o[0] + '" aria-pressed="false">' + o[1] + '</button>'; }).join('') + '</div></div>'; }).join('') + '<div id="qRes" hidden><p>Попробуйте: <b id="qPick"></b></p><p class="muted" id="qWhy"></p><button class="btn" type="button" id="qShow">Применить к заявке</button></div>');
       var pick;
       $$('[data-q]', sheetBody).forEach(function (g) { $$('.chip', g).forEach(function (b) { b.addEventListener('click', function () { $$('.chip', g).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); a[g.dataset.q] = b.dataset.v; res(); }); }); });
       function res() {
@@ -320,7 +320,7 @@
         var why = { day: 'практично и не надоест за 3 недели', work: 'аккуратно и уместно на любой встрече', party: 'заметно в свете и на фото', date: 'женственно и смело', vac: 'свежо на загорелой коже' }[a.occ];
         pick = [s, c]; $('#qPick').textContent = names[s] + ', ' + c.toLowerCase(); $('#qWhy').textContent = 'Почему: ' + why + '. Окончательно решите вместе с мастером.'; $('#qRes').hidden = false;
       }
-      sheetBody.addEventListener('click', function (e) { if (e.target.id === 'qShow' && pick) { window.__tryon(pick[0], pick[1]); closeSheet(); goal('quiz_done'); var st = $('.hand-stage'); if (st) st.scrollIntoView({ behavior: 'smooth', block: 'center' }); } });
+      sheetBody.addEventListener('click', function (e) { if (e.target.id === 'qShow' && pick) { window.__tryon(pick[0], pick[1]); closeSheet(); goal('quiz_done'); var st = $('.tryon'); if (st) st.scrollIntoView({ behavior: 'smooth', block: 'center' }); say('Форма и цвет добавлены к заявке'); } });
     });
   });
 
