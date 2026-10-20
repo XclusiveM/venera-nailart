@@ -433,6 +433,104 @@
     draw(); ready.then(draw, draw);
   });
 
+
+  /* ---------- Портфолио: реальные фотографии, фильтры, клавиатура, свайпы ---------- */
+  safe('portfolio', function () {
+    var items = json('portfolio-data');
+    var dialog = $('#portfolioViewer'), img = $('#folioImage');
+    var cards = $('[data-work-index]');
+    if (!dialog || !img || !Array.isArray(items) || !items.length || !cards.length) return;
+    var counter = $('#folioCounter'), caption = $('#folioCaption');
+    var trigger = null, current = -1, swipeStart = null, sourceTicket = 0;
+    var visibleIds = function () {
+      return cards.filter(function (card) { return !card.hidden; })
+        .map(function (card) { return Number(card.dataset.workIndex); });
+    };
+    function loadAt(index) {
+      var visible = visibleIds(), record = items[index];
+      if (!record || visible.indexOf(index) < 0) return;
+      current = index;
+      img.classList.add('folio-loading');
+      var ticket = ++sourceTicket;
+      var loader = new Image();
+      loader.onload = function () {
+        if (ticket !== sourceTicket) return;
+        img.src = record.full; img.alt = 'Фото из галереи ВенераNAILART: ' + record.title;
+        img.classList.remove('folio-loading');
+      };
+      loader.onerror = function () {
+        if (ticket !== sourceTicket) return;
+        img.src = record.thumb; img.alt = 'Фото из галереи ВенераNAILART: ' + record.title;
+        img.classList.remove('folio-loading');
+      };
+      loader.src = record.full;
+      var pos = visible.indexOf(index);
+      counter.textContent = (pos + 1) + ' / ' + visible.length;
+      caption.textContent = record.title;
+      if (visible.length > 1) {
+        var next = items[visible[(pos + 1) % visible.length]];
+        if (next) { var pre = new Image(); pre.src = next.full; }
+      }
+      $('.folio-prev', dialog).hidden = visible.length < 2;
+      $('.folio-next', dialog).hidden = visible.length < 2;
+    }
+    function move(by) {
+      var visible = visibleIds(), pos = visible.indexOf(current);
+      if (pos < 0 || visible.length < 2) return;
+      loadAt(visible[(pos + by + visible.length) % visible.length]);
+    }
+    function openViewer(index, el) {
+      var record = items[index]; if (!record || !dialog.showModal) return;
+      trigger = el;
+      document.body.classList.add('folio-open');
+      dialog.showModal();
+      loadAt(index);
+      $('.folio-close', dialog).focus();
+    }
+    cards.forEach(function (el) {
+      el.addEventListener('click', function () {
+        openViewer(Number(el.dataset.workIndex), el);
+      });
+    });
+    $('.folio-close', dialog).addEventListener('click', function () { dialog.close(); });
+    $('.folio-prev', dialog).addEventListener('click', function () { move(-1); });
+    $('.folio-next', dialog).addEventListener('click', function () { move(1); });
+    dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
+    dialog.addEventListener('close', function () {
+      sourceTicket++;
+      document.body.classList.remove('folio-open');
+      if (trigger && trigger.isConnected) trigger.focus();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!dialog.open) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); move(-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); move(1); }
+    });
+    var view = $('.folio-visual', dialog);
+    view.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) { swipeStart = null; return; }
+      swipeStart = {x:e.touches[0].clientX, y:e.touches[0].clientY};
+    }, {passive:true});
+    view.addEventListener('touchend', function (e) {
+      if (!swipeStart || !e.changedTouches.length) return;
+      var dx=e.changedTouches[0].clientX-swipeStart.x;
+      var dy=e.changedTouches[0].clientY-swipeStart.y;
+      swipeStart=null;
+      if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)*1.25) move(dx > 0 ? -1 : 1);
+    }, {passive:true});
+    $('[data-work-filter]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var category=b.dataset.workFilter;
+        $('[data-work-filter]').forEach(function (other) {
+          other.setAttribute('aria-pressed', String(other === b));
+        });
+        cards.forEach(function (card) {
+          card.hidden = category !== 'all' && card.dataset.workKind !== category;
+        });
+      });
+    });
+  });
+
   /* ---------- Яндекс Метрика с согласием ---------- */
   safe('metrika', function () {
     if (!CFG.metrika) return;
