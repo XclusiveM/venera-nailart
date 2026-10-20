@@ -596,3 +596,39 @@ body{padding-bottom:0}
 }
 
 body.folio-open{overflow:hidden;overscroll-behavior:none}
+
+/* Service calculator: grouped choices and compact mobile presentation */
+.booking-context{font-size:13px;line-height:1.55;color:var(--muted);margin:12px 0 18px}
+.booking-group{margin:0 0 22px}
+.booking-group-title{font:600 13px/1.3 var(--sans);letter-spacing:.045em;color:var(--muted);margin:0 0 10px}
+.booking-group-choices{display:grid;gap:8px}
+.svc-compact{padding:11px 13px;gap:10px;min-height:68px}
+.svc-compact[data-selected="true"]{border-color:var(--cherry);background:#fdf5f8}
+.svc-compact .nm{font-size:14px;line-height:1.3;gap:11px}
+.svc-compact .nm small{font-size:12px;line-height:1.35;margin-top:3px}
+.svc-compact .pr{font-size:15px;min-width:77px}
+.svc-compact .pr small{font-size:12px}
+.svc-compact .info-btn{width:30px;height:30px}
+.svc-compact .dot{width:18px;height:18px}
+.booking-selection-v2{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.booking-selection-v2 strong{font-size:13px;line-height:1.45}
+.booking-selection-v2 .booking-reset{flex:none}
+#calc .tabs{scrollbar-width:none}
+#calc .tabs::-webkit-scrollbar{display:none}
+@media(max-width:560px){
+ #calc .tabs{display:flex;overflow-x:auto;flex-wrap:nowrap;gap:5px;padding:5px;border-radius:15px;scroll-snap-type:x proximity}
+ #calc .tab{flex:0 0 auto;white-space:nowrap;padding:9px 12px;font-size:13px;scroll-snap-align:start}
+ .booking-selection-v2{padding:13px 14px;border-radius:14px}
+ .svc-compact{padding:10px 11px;gap:7px;min-height:64px}
+ .svc-compact .nm{font-size:13px;gap:8px}
+ .svc-compact .nm small{font-size:11px}
+ .svc-compact .pr{font-size:13px;min-width:69px}
+ .svc-compact .pr small{font-size:11px}
+ .svc-compact .info-btn{width:27px;height:27px;font-size:13px}
+ .svc-compact .dot{width:16px;height:16px}
+ .booking-group{margin-bottom:19px}
+ .booking-group-title{margin-bottom:8px}
+ .booking-context{margin:10px 0 16px}
+ #calc .extras{gap:7px}
+ #calc .extra{font-size:13px;padding:8px 11px}
+}
