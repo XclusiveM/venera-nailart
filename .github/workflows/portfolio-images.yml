@@ -1,0 +1,45 @@
+name: Prepare Venera portfolio images
+on:
+  push:
+    branches:
+      - audit/booking-fixes-2026-10-20
+    paths:
+      - 'src/portfolio.json'
+      - 'tools/sync_portfolio_images.py'
+      - '.github/workflows/portfolio-images.yml'
+permissions:
+  contents: write
+concurrency:
+  group: portfolio-images-draft
+  cancel-in-progress: false
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image processing
+        run: python -m pip install pillow==11.3.0
+      - name: Fetch only manually curated public photographs and resize
+        run: python tools/sync_portfolio_images.py
+      - name: Commit optimised images to preview branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/photos/gallery/
+          if ! git diff --cached --quiet; then
+            git commit -m "Add 30 Venera portfolio image pairs (locally hosted WebP)"
+            for i in 1 2 3 4 5; do
+              git pull --rebase origin audit/booking-fixes-2026-10-20
+              if git push origin HEAD:audit/booking-fixes-2026-10-20; then
+                exit 0
+              fi
+              sleep 3
+            done
+            exit 1
+          fi
