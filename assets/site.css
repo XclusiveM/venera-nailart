@@ -441,3 +441,53 @@ ol.steps li{margin-bottom:8px}
   .top .menu-btn{flex:0 0 40px}
 }
 @media(max-width:359px){.top .btn{display:none}.home-hero h1{font-size:35px}.home-hero .hero-actions{gap:13px}}
+
+
+/* Visual repair: compact tools, selectable specialists, no viewport obstruction */
+/* The booking button remains in the sticky header: a second floating bar hid content. */
+.mcta{display:none!important}
+body{padding-bottom:0}
+.tryon{display:block!important;max-width:820px}
+.tryon .hand-stage[hidden]{display:none!important}
+.tryon .ctl{margin-top:16px}
+.tryon .choice{margin-top:22px}
+.podo{grid-template-columns:1fr;gap:24px}
+.foot-choices{display:grid;gap:9px;align-content:start;background:#FCF9F7;border:1px solid var(--line);border-radius:18px;padding:20px}
+.foot-choices .eyebrow{margin-bottom:2px}
+.foot-choices .muted{font-size:14px;margin-bottom:7px}
+.foot-choices .hot{position:relative;left:auto;top:auto;margin:0;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:48px;text-align:left;border:1px solid #E3D7DD;border-radius:10px;background:#fff;padding:12px 14px;font-weight:600;font-size:14px;color:#493544}
+.foot-choices .hot::before,.foot-choices .hot::after{display:none}
+.foot-choices .hot[aria-pressed="true"]{border-color:#AE4B6A;background:#F7E9EE;color:#7C2746}
+.foot-choices .hot span{font-size:18px;font-weight:400;opacity:.65}
+.foot-choices .hot:focus-visible{outline:3px solid #A4214D;outline-offset:3px}
+.specialist-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.specialist-card{background:#fff;padding:26px;border:1px solid #E8DDE1;border-radius:20px;display:flex;flex-direction:column;align-items:flex-start;gap:12px;min-width:0}
+.specialist-card h3{font-size:clamp(24px,3vw,33px);line-height:1.18;margin:0;color:#402B38}
+.specialist-card p{color:#71636C;font-size:14px;margin:0 0 10px}
+.specialist-card .btn{min-height:44px;padding:0 16px;margin-top:auto;background:#8D2450;border-radius:10px}
+.specialist-index{font-size:11px;font-weight:600;letter-spacing:.15em;color:#98536D}
+.specialist-note{margin-top:13px}
+.booking-selection{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 14px;border:1px solid #E8D5DC;background:#fff9fa;border-radius:12px;margin-bottom:12px;color:#593A4B;font-size:13px}
+.booking-selection strong{font-size:13px;font-weight:600}
+.booking-reset{background:transparent;border:0;text-decoration:underline;text-underline-offset:3px;color:#9F294F;font-size:13px;font-weight:600;min-height:34px;padding:0}
+.svc{gap:8px;padding:12px 10px;border-radius:13px}
+.svc .nm{display:flex;gap:10px;align-items:center;text-align:left;min-width:0;flex:1;font-size:14px;line-height:1.35}
+.svc .nm .dot{display:block;flex:0 0 20px}
+.svc .nm>span:last-child{display:block;min-width:0;flex:1}
+.svc .nm small{margin-top:4px;line-height:1.4}
+.svc .info-btn{flex:0 0 32px}
+.svc .pr{min-width:86px;flex:0 0 auto;font-size:14px}
+.svc .pr small{font-size:12px}
+@media(min-width:900px){.podo{grid-template-columns:.9fr 1.1fr}.tryon{max-width:820px}}
+@media(max-width:599px){
+ .specialist-grid{grid-template-columns:1fr}
+ .specialist-card{padding:22px}
+ .section-head{margin-bottom:20px}
+ .section-head h2{font-size:clamp(28px,7.5vw,37px)}
+ .summary .total{font-size:38px}
+ .calc .tabs{border-radius:12px}
+ .calc .tab{font-size:13px;padding:8px 13px}
+ .podo-card{padding:17px}
+ .foot-choices{padding:15px}
+ .svc .pr{min-width:77px}
+}
