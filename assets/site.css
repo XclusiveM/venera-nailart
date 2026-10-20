@@ -594,3 +594,5 @@ body{padding-bottom:0}
  .folio-dialog[open],.folio-spinner{animation:none}
  .folio-card:hover img{transform:none}
 }
+
+body.folio-open{overflow:hidden;overscroll-behavior:none}
