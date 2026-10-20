@@ -3,6 +3,7 @@
 import http.server, os, socketserver, sys, threading
 from functools import partial
 from pathlib import Path
+from urllib.parse import unquote
 from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = sorted(p.name for p in ROOT.glob('*.html'))
@@ -48,6 +49,22 @@ with sync_playwright() as p:
             if not pg.inner_text('#total').strip() or pg.inner_text('#total') == '—': err.append(f'{kind}: пустой итог во вкладке {t}')
         pg.click('#calc [data-tab=mani]'); pg.click('#whenDay .chip >> nth=1')
         if '%D0%B7%D0%B0%D0%B2%D1%82%D1%80%D0%B0' not in pg.get_attribute('#sendReq', 'href'): err.append(f'{kind}: заявка в Telegram без дня')
+        # Проверка комментария клиента, суммы и нескольких услуг в Telegram-заявке.
+        pg.fill('#bookingComment', 'Без покрытия, удобно после 18:00')
+        draft = unquote(pg.get_attribute('#sendReq', 'href') or '')
+        if 'Без покрытия, удобно после 18:00' not in draft:
+            err.append(f'{kind}: Telegram не содержит комментария')
+        if 'Маникюр с гель-лаком' not in draft or '2 500 ₽' not in draft:
+            err.append(f'{kind}: Telegram не содержит цену и название услуги')
+        if not pg.is_enabled('#copyRequest'):
+            err.append(f'{kind}: копирование заказа недоступно')
+        pg.click('#calc [data-tab=pedi]')
+        pg.click('#svcList .nm >> nth=2')
+        if '5 800' not in pg.inner_text('#total').replace('\u00a0', ' '):
+            err.append(f'{kind}: неверная сумма двух услуг')
+        draft = unquote(pg.get_attribute('#sendReq', 'href') or '')
+        if 'Педикюр с гель-лаком' not in draft or 'Маникюр с гель-лаком' not in draft:
+            err.append(f'{kind}: Telegram потерял выбранную услугу')
         pg.click('.hot[data-podo=callus]')
         if 'мозоли' not in pg.inner_text('#podoTitle'): err.append(f'{kind}: точка стопы не работает')
         pg.click('.route-tab[data-route=metro]')
@@ -55,6 +72,14 @@ with sync_playwright() as p:
         pg.click('[data-info="Маникюр с гель-лаком"]'); pg.wait_for_timeout(200)
         if not pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не открылось')
         if pg.errs: err.append(f'{kind} interactions: {pg.errs}')
+        pg.close()
+        # Предварительный выбор при переходе из мужского раздела.
+        pg = page(br, 390, 'index.html?service=men-mani#calc')
+        if 'Мужской маникюр' not in pg.inner_text('#lines'):
+            err.append(f'{kind}: мужская услуга не выбрана через ссылку')
+        if 'Стоимость уточняется' not in pg.inner_text('#total'):
+            err.append(f'{kind}: неутверждённая мужская цена показана как окончательная')
+        if pg.errs: err.append(f'{kind} men's deep link: {pg.errs}')
         pg.close()
         pg = page(br, 390, 'podarochnyy-sertifikat.html'); pg.fill('#gTo', 'Ане'); pg.click('[data-gift=him]')
         if 'Ане' not in pg.get_attribute('#gOrder', 'href').encode().decode() and '%D0%90%D0%BD%D0%B5' not in pg.get_attribute('#gOrder', 'href'): err.append(f'{kind}: сертификат без имени в заявке')
