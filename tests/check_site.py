@@ -3,6 +3,7 @@
 import json, re, subprocess, sys
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = sorted(p.name for p in ROOT.glob('*.html'))
 BANNED = re.compile(r'лечим|вылеч|лечение вросш|врач-подолог|медицинск(ий|ого) педикюр|онихомикоз|гарантированн', re.I)
@@ -37,11 +38,14 @@ for name in PAGES:
         if r.startswith(('http:', 'https:', '//')): err.append(f'{name}: внешний ресурс {r}')
     for u in p.links:
         if u.startswith(('https:', 'http:', 'mailto:', 'tel:', 'data:', '//')): continue
-        t, sep, frag = u.partition('#')
-        if t and not (ROOT / t).exists(): err.append(f'{name}: битая ссылка {u}')
-        if frag:
-            tp = P(); tp.feed(((ROOT / t) if t else path).read_text(encoding='utf-8'))
-            if frag not in tp.ids: err.append(f'{name}: битый якорь {u}')
+        parsed = urlsplit(u)
+        target = ROOT / parsed.path if parsed.path else path
+        if parsed.path and not target.is_file():
+            err.append(f'{name}: битая ссылка {u}')
+            continue
+        if parsed.fragment:
+            tp = P(); tp.feed(target.read_text(encoding='utf-8'))
+            if parsed.fragment not in tp.ids: err.append(f'{name}: битый якорь {u}')
     for j in p.ld:
         try: json.loads(j)
         except Exception as e: err.append(f'{name}: JSON-LD не парсится: {e}')
