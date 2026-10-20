@@ -140,12 +140,12 @@ def head(title, desc, path, ld=None):
 <a class="brand" href="index.html" aria-label="Венера, ногтевая студия — на главную"><b>Венера</b><small>ногтевая студия</small></a>
 <nav class="nav" aria-label="Разделы">{"".join(f'<a href="{h}">{t}</a>' for h, t in NAV)}</nav>
 <a class="icon-btn call" href="tel:{B['phone_href']}" aria-label="Позвонить {B['phone']}">{ICON['phone']}</a>
-<a class="btn" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Записаться</a>
+<a class="btn" href="{BOOK_ROUTE}">Записаться</a>
 <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Меню">{ICON['menu']}</button>
 </div></header>
 <div class="menu-sheet" id="menu" hidden>
 {"".join(f'<a href="{h}">{t}</a>' for h, t in NAV)}<a href="tel:{B['phone_href']}">{B['phone']}</a>
-<div class="actions"><a class="btn" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Записаться онлайн</a><a class="btn btn-ghost" href="{tg('Здравствуйте! Хочу записаться.')}" target="_blank" rel="noopener">{ICON['tg']}Написать в Telegram</a></div>
+<div class="actions"><a class="btn" href="{BOOK_ROUTE}">Записаться онлайн</a><a class="btn btn-ghost" href="{tg('Здравствуйте! Хочу записаться.')}" target="_blank" rel="noopener">{ICON['tg']}Написать в Telegram</a></div>
 </div>
 <main id="main">
 '''
@@ -165,7 +165,7 @@ def foot():
 <p>Москва, {E(ADDR)}, {B['postal']}<br>5 минут пешком от ТЦ «Лайнер»</p>
 <p><a href="tel:{B['phone_href']}">{B['phone']}</a><br>{E(B['hours'] or B['hours_note'])}</p></div>
 <ul class="foot-links"><li><a href="manikyur.html">Маникюр</a></li><li><a href="pedikyur.html">Педикюр</a></li><li><a href="narashchivanie-nogtey.html">Наращивание</a></li><li><a href="podolog-novye-vatutinki.html">Подолог</a></li><li><a href="vrosshij-nogot.html">Вросший ноготь</a></li><li><a href="muzhskoj-manikyur.html">Мужской маникюр</a></li></ul>
-<ul class="foot-links"><li><a href="{BOOK_ROUTE}" target="_blank" rel="noopener">Онлайн-запись</a></li><li><a href="https://t.me/{B['telegram']}" target="_blank" rel="noopener">Telegram</a></li><li><a href="{B['yandex_org']}" target="_blank" rel="noopener">Яндекс Карты</a></li><li><a href="ceny.html">Все цены</a></li><li><a href="podarochnyy-sertifikat.html">Сертификаты</a></li><li><a href="kontakty.html">Контакты</a></li></ul>
+<ul class="foot-links"><li><a href="{BOOK_ROUTE}">Онлайн-запись</a></li><li><a href="https://t.me/{B['telegram']}" target="_blank" rel="noopener">Telegram</a></li><li><a href="{B['yandex_org']}" target="_blank" rel="noopener">Яндекс Карты</a></li><li><a href="ceny.html">Все цены</a></li><li><a href="podarochnyy-sertifikat.html">Сертификаты</a></li><li><a href="kontakty.html">Контакты</a></li></ul>
 </div>
 <div class="foot-legal">{legal}<p><a href="politika.html">Политика обработки персональных данных</a> · <a href="soglasie.html">Согласие на обработку данных</a></p></div>
 </div></footer>
@@ -184,7 +184,7 @@ def page_hero(crumb, h1, lead, tgtext, extra=''):
     return f'''<section class="page-hero"><div class="wrap">
 <nav class="crumbs" aria-label="Навигация"><a href="index.html">Главная</a> / {E(crumb)}</nav>
 <h1>{E(h1)}</h1><p class="lead">{lead}</p>{extra}
-<div class="actions" data-hero-end><a class="btn" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Записаться онлайн</a><a class="btn btn-ghost" href="{tg(tgtext)}" target="_blank" rel="noopener">{ICON['tg']}Написать в Telegram</a></div>
+<div class="actions" data-hero-end><a class="btn" href="{BOOK_ROUTE}">Записаться онлайн</a><a class="btn btn-ghost" href="{tg(tgtext)}" target="_blank" rel="noopener">{ICON['tg']}Написать в Telegram</a></div>
 </div></section>'''
 
 
@@ -243,6 +243,8 @@ def service_ld(name, ids, crumb, path, faq):
 def booking_profiles_block():
     cards = []
     for n, profile in enumerate(PROFILES, 1):
+        if not profile.get('active', True):
+            continue
         url = str(profile.get('url', ''))
         if not url.startswith('https://bumpix.net/'):
             continue
@@ -349,7 +351,7 @@ index += f'''<section class="hero home-hero"><div class="wrap hero-grid">
 <ul class="hero-facts"><li>Маникюр с гель-лаком — {rub(svc('mani-gel')['price'])}</li><li>5 минут от ТЦ «Лайнер»</li></ul>
 <div class="hero-actions" data-hero-end>
 <a class="btn hero-primary" href="#calc">Выбрать услугу <span aria-hidden="true">↗</span></a>
-<a class="hero-textlink" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Сразу к свободному времени <span aria-hidden="true">→</span></a>
+<a class="hero-textlink" href="{BOOK_ROUTE}">Сразу к свободному времени <span aria-hidden="true">→</span></a>
 </div>
 </div>
 <div class="hero-editorial" aria-label="Фирменная графическая композиция студии">
@@ -375,7 +377,7 @@ index += section(f'''<div class="section-head"><span class="eyebrow">Цены</s
 <div class="extras" id="extras" role="group" aria-label="Дополнительно">{"".join(f'<button class="extra" type="button" data-extra="{x["id"]}" aria-pressed="false">+ {x["name"]} <small>{"от " if x["from"] else ""}{rub(x["price"])}</small></button>' for x in D["extras"])}</div>
 <noscript>{price_table([s["id"] for s in SVC])}</noscript></div>
 <aside class="summary" aria-live="polite"><div class="note" style="color:var(--night-muted)">Ориентировочно</div><div class="total" id="total">—</div><div class="time" id="time"></div><ul id="lines"></ul>
-<a class="btn" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Выбрать время онлайн</a>
+<a class="btn" href="{BOOK_ROUTE}">Выбрать время онлайн</a>
 <div class="label">или заявка в Telegram: когда удобно?</div>
 <div class="chips" id="whenDay">{"".join(f'<button class="chip" type="button" aria-pressed="false">{d}</button>' for d in ["Сегодня", "Завтра", "В будни", "В выходные"])}</div>
 <div class="chips" id="whenTime" style="margin-top:8px">{"".join(f'<button class="chip" type="button" aria-pressed="false">{d}</button>' for d in ["Утром", "Днём", "Вечером"])}</div>
@@ -394,7 +396,7 @@ index += section(f'''<div class="podo">
 <div class="foot-choices" id="foot"><span class="eyebrow">Выберите вопрос</span><p class="muted">Косметический уход за стопами и ногтями. При боли или воспалении обратитесь к врачу.</p>{"".join(f'<button class="hot" type="button" data-podo="{k}" aria-pressed="{"true" if k == "ingrown" else "false"}">{lbl}<span aria-hidden="true">→</span></button>' for k, x, y, lbl in PODO_POINTS)}</div>
 <div><span class="eyebrow">Уход за стопами</span><h2>Вопросы по ногтям и коже стоп</h2><p class="muted">Выберите интересующую тему. Информация не заменяет врачебный осмотр.</p>
 <div class="podo-card"><h3 id="podoTitle">Обработка вросшего ногтя</h3><p id="podoText" class="muted"></p><div class="meta"><div><b id="podoPrice"></b><span>стоимость</span></div><div><b id="podoTime"></b><span>длительность</span></div></div>
-<div class="actions"><a class="btn btn-sm" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Записаться</a><button class="btn btn-sm btn-soft" type="button" id="podoMore">Подробнее</button></div></div>
+<div class="actions"><a class="btn btn-sm" href="{BOOK_ROUTE}">Записаться</a><button class="btn btn-sm btn-soft" type="button" id="podoMore">Подробнее</button></div></div>
 <div class="ctl-label" style="margin-top:20px">Что беспокоит?</div>
 <div class="chips" id="footQuiz">{"".join(f'<button class="chip{" red" if k == "doctor" else ""}" type="button" data-f="{k}" aria-pressed="false">{t}</button>' for k, t in [("ingrown", "Ноготь врезается в кожу"), ("system", "Врастает снова и снова"), ("callus", "Мозоль, больно в обуви"), ("feet", "Сухие пятки, трещины"), ("toes", "Утолщённые ногти"), ("consult", "Не знаю, что это"), ("doctor", "Сильная боль, гной, отёк")])}</div>
 <p class="ans" id="footAns" aria-live="polite"></p>
@@ -470,15 +472,15 @@ service_page('pedikyur.html', 'Педикюр', 'Педикюр в Новых В
              ('Уход после педикюра', ['Пару дней носите удобную, не тесную обувь.', 'Мажьте стопы кремом вечером, особенно пятки.', 'Подстригайте ногти на ногах прямо, не закругляя углы.'], 35, 'педикюр'), 'Педикюр')
 
 service_page('podolog-novye-vatutinki.html', 'Подолог', 'Подолог в Новых Ватутинках: вросший ноготь, мозоли, стопы | Венера, ногтевая студия',
-             'Подологический педикюр 3 300 ₽, вросший ноготь от 1 000 ₽, консультация 700 ₽ в Новых Ватутинках (ТиНАО). Услуги не являются медицинскими.',
+             'Подологический педикюр 3 300 ₽, вросший ноготь от 1 000 ₽, консультация 700 ₽ в Новых Ватутинках (ТиНАО). Характер процедур и необходимые разрешения нужно уточнять у специалиста.',
              'Подолог в Новых Ватутинках', 'Вросший ноготь, мозоли, трещины на пятках, утолщённые ногти. Не нужно ехать в центр: всё рядом, на 6-й Нововатутинской.',
              'Здравствуйте! Хочу на консультацию подолога. Беспокоит: ', ['consult', 'podo-pedi', 'ingrown', 'system', 'feet', 'toes', 'callus'],
-             ['<span class="eyebrow">С чем приходят</span><h2>Что делает подолог</h2><ul class="tips"><li>Вросший ноготь: мастер аккуратно освобождает край. <a href="vrosshij-nogot.html">Подробнее</a></li><li>Ноготь врастает снова: коррекционная система помогает ему расти ровно.</li><li>Мозоли и натоптыши: убираем огрубевшую кожу и снимаем давление.</li><li>Сухие пятки и трещины: обработка стоп.</li></ul><p class="disclaimer">Услуги не являются медицинскими. Сильная боль, гной, отёк, растущее покраснение или сахарный диабет — повод сначала обратиться к врачу.</p>',
+             ['<span class="eyebrow">С чем приходят</span><h2>Что делает подолог</h2><ul class="tips"><li>Вросший ноготь: мастер аккуратно освобождает край. <a href="vrosshij-nogot.html">Подробнее</a></li><li>Ноготь врастает снова: коррекционная система помогает ему расти ровно.</li><li>Мозоли и натоптыши: убираем огрубевшую кожу и снимаем давление.</li><li>Сухие пятки и трещины: обработка стоп.</li></ul><p class="disclaimer">Характер процедур и необходимые разрешения нужно уточнять у специалиста. Сильная боль, гной, отёк, растущее покраснение или сахарный диабет — повод сначала обратиться к врачу.</p>',
               '<div class="grid-2"><div><span class="eyebrow">Отличие</span><h2>Подологический педикюр и обычный</h2><p class="muted">Обычный педикюр — про аккуратный вид и покрытие. Подологический — про проблемные зоны стоп и ногтей: мастер смотрит, почему появилась мозоль или врастает ноготь, и работает с этим. Покрытие по желанию.</p></div><div><span class="eyebrow">Не знаете, что нужно</span><h2>Начните с консультации</h2><p class="muted">За 700 ₽ мастер осмотрит стопы, подскажет процедуру и её стоимость.</p></div></div>'],
              [('Есть ли подолог в Новых Ватутинках?', 'Да, на 6-й Нововатутинской улице, 5: подологический педикюр, обработка вросшего ногтя, мозолей и стоп.'),
               ('Сколько стоит консультация подолога?', '700 ₽, около 30 минут.'),
               ('Можно ли с диабетом?', 'При диабете сначала посоветуйтесь с врачом и обязательно скажите о нём мастеру при записи.'),
-              ('Это медицинская услуга?', 'Нет. Подологический уход не является медицинской услугой. При признаках заболевания нужен врач.')],
+              ('Когда нужно обратиться к врачу?', 'При боли, воспалении, выделениях или подозрении на заболевание ногтей или кожи необходим врач. Характер допустимого косметического ухода уточняется отдельно.')],
              ('Уход после подологии', ['Выполняйте рекомендации мастера по уходу дома.', 'Не срезайте уголки ногтя, если он врастал.', 'При покраснении, отёке или сильной боли обратитесь к врачу.', 'На повторный визит приходите в срок, который назвал мастер.'], 28, 'подологию'), 'Подологический педикюр')
 
 service_page('vrosshij-nogot.html', 'Вросший ноготь', 'Вросший ноготь в Новых Ватутинках: обработка от 1 000 ₽ | Венера, ногтевая студия',
