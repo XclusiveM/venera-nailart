@@ -109,10 +109,16 @@ with sync_playwright() as p:
         pg.click('.route-tab[data-route=metro]')
         if pg.get_attribute('#mapBox', 'data-route') != 'metro': err.append(f'{kind}: маршрут не переключается')
         pg.click('#calc [data-tab=mani]')
-        pg.click('[data-info="Маникюр с гель-лаком"]'); pg.wait_for_timeout(200)
-        if not pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не открылось')
-        pg.click('.sheet-close')
-        if pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не закрылось')
+        info = pg.locator('[data-info="Маникюр с гель-лаком"]')
+        if not info.count():
+            err.append(f'{kind}: кнопка информации не найдена; services='
+                       f'{pg.locator("#svcList").inner_text()}; errors={pg.errs}')
+        else:
+            info.click(); pg.wait_for_timeout(200)
+            if not pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не открылось')
+            else:
+                pg.click('.sheet-close')
+                if pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не закрылось')
         if pg.errs: err.append(f'{kind} interactions: {pg.errs}')
         pg.close()
         # Предварительный выбор при переходе из мужского раздела.
