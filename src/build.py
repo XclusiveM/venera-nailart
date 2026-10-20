@@ -15,6 +15,8 @@ D = json.loads((SRC / 'data.json').read_text(encoding='utf-8'))
 INFO = json.loads((SRC / 'info.json').read_text(encoding='utf-8'))
 B = D['business']
 SVC = D['services']
+PROFILES = D.get('booking_profiles', [])
+BOOK_ROUTE = 'index.html#specialists'
 E = html.escape
 
 
@@ -138,12 +140,12 @@ def head(title, desc, path, ld=None):
 <a class="brand" href="index.html" aria-label="Венера, ногтевая студия — на главную"><b>Венера</b><small>ногтевая студия</small></a>
 <nav class="nav" aria-label="Разделы">{"".join(f'<a href="{h}">{t}</a>' for h, t in NAV)}</nav>
 <a class="icon-btn call" href="tel:{B['phone_href']}" aria-label="Позвонить {B['phone']}">{ICON['phone']}</a>
-<a class="btn" href="{B['book_url']}" target="_blank" rel="noopener">Записаться</a>
+<a class="btn" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Записаться</a>
 <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Меню">{ICON['menu']}</button>
 </div></header>
 <div class="menu-sheet" id="menu" hidden>
 {"".join(f'<a href="{h}">{t}</a>' for h, t in NAV)}<a href="tel:{B['phone_href']}">{B['phone']}</a>
-<div class="actions"><a class="btn" href="{B['book_url']}" target="_blank" rel="noopener">Записаться онлайн</a><a class="btn btn-ghost" href="{tg('Здравствуйте! Хочу записаться.')}" target="_blank" rel="noopener">{ICON['tg']}Написать в Telegram</a></div>
+<div class="actions"><a class="btn" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Записаться онлайн</a><a class="btn btn-ghost" href="{tg('Здравствуйте! Хочу записаться.')}" target="_blank" rel="noopener">{ICON['tg']}Написать в Telegram</a></div>
 </div>
 <main id="main">
 '''
@@ -163,11 +165,11 @@ def foot():
 <p>Москва, {E(ADDR)}, {B['postal']}<br>5 минут пешком от ТЦ «Лайнер»</p>
 <p><a href="tel:{B['phone_href']}">{B['phone']}</a><br>{E(B['hours'] or B['hours_note'])}</p></div>
 <ul class="foot-links"><li><a href="manikyur.html">Маникюр</a></li><li><a href="pedikyur.html">Педикюр</a></li><li><a href="narashchivanie-nogtey.html">Наращивание</a></li><li><a href="podolog-novye-vatutinki.html">Подолог</a></li><li><a href="vrosshij-nogot.html">Вросший ноготь</a></li><li><a href="muzhskoj-manikyur.html">Мужской маникюр</a></li></ul>
-<ul class="foot-links"><li><a href="{B['book_url']}" target="_blank" rel="noopener">Онлайн-запись</a></li><li><a href="https://t.me/{B['telegram']}" target="_blank" rel="noopener">Telegram</a></li><li><a href="{B['yandex_org']}" target="_blank" rel="noopener">Яндекс Карты</a></li><li><a href="ceny.html">Все цены</a></li><li><a href="podarochnyy-sertifikat.html">Сертификаты</a></li><li><a href="kontakty.html">Контакты</a></li></ul>
+<ul class="foot-links"><li><a href="{BOOK_ROUTE}" target="_blank" rel="noopener">Онлайн-запись</a></li><li><a href="https://t.me/{B['telegram']}" target="_blank" rel="noopener">Telegram</a></li><li><a href="{B['yandex_org']}" target="_blank" rel="noopener">Яндекс Карты</a></li><li><a href="ceny.html">Все цены</a></li><li><a href="podarochnyy-sertifikat.html">Сертификаты</a></li><li><a href="kontakty.html">Контакты</a></li></ul>
 </div>
-<div class="foot-legal">{legal}<p><a href="politika.html">Политика обработки персональных данных</a> · <a href="soglasie.html">Согласие на обработку данных</a></p><p>Услуги подологии не являются медицинскими.</p></div>
+<div class="foot-legal">{legal}<p><a href="politika.html">Политика обработки персональных данных</a> · <a href="soglasie.html">Согласие на обработку данных</a></p></div>
 </div></footer>
-<div class="mcta" id="mcta"><a class="btn" href="{B['book_url']}" target="_blank" rel="noopener">Записаться онлайн</a><a class="btn btn-soft" href="{tg('Здравствуйте! Хочу записаться.')}" target="_blank" rel="noopener" aria-label="Написать в Telegram">{ICON['tg']}</a></div>
+
 <dialog class="sheet" id="sheet" aria-labelledby="sheetTitle"><div class="sheet-in"><button class="sheet-close" type="button" aria-label="Закрыть">✕</button><div id="sheetBody"></div></div></dialog>
 <div class="consent" id="consent" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -182,7 +184,7 @@ def page_hero(crumb, h1, lead, tgtext, extra=''):
     return f'''<section class="page-hero"><div class="wrap">
 <nav class="crumbs" aria-label="Навигация"><a href="index.html">Главная</a> / {E(crumb)}</nav>
 <h1>{E(h1)}</h1><p class="lead">{lead}</p>{extra}
-<div class="actions" data-hero-end><a class="btn" href="{B['book_url']}" target="_blank" rel="noopener">Записаться онлайн</a><a class="btn btn-ghost" href="{tg(tgtext)}" target="_blank" rel="noopener">{ICON['tg']}Написать в Telegram</a></div>
+<div class="actions" data-hero-end><a class="btn" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Записаться онлайн</a><a class="btn btn-ghost" href="{tg(tgtext)}" target="_blank" rel="noopener">{ICON['tg']}Написать в Telegram</a></div>
 </div></section>'''
 
 
@@ -238,6 +240,24 @@ def service_ld(name, ids, crumb, path, faq):
     return {"@context": "https://schema.org", "@graph": g}
 
 
+def booking_profiles_block():
+    cards = []
+    for n, profile in enumerate(PROFILES, 1):
+        url = str(profile.get('url', ''))
+        if not url.startswith('https://bumpix.net/'):
+            continue
+        label = E(profile.get('label', 'Профиль записи ' + str(n)))
+        extra = 'Имя и специализация уточняются' if not profile.get('confirmed') else 'Услуги и свободное время — в Bumpix'
+        cards.append(f'<div class="specialist-card"><span class="specialist-index">0{n} / ОНЛАЙН-ЗАПИСЬ</span>'
+                     f'<h3>{label}</h3><p>{extra}</p>'
+                     f'<a class="btn btn-sm" href="{E(url)}" target="_blank" rel="noopener noreferrer">Посмотреть время ↗</a></div>')
+    return ('<div class="section-head"><span class="eyebrow">Мастера и запись</span>'
+            '<h2>Выберите удобное время</h2>'
+            '<p class="muted">Каждый мастер ведёт своё расписание. Актуальные услуги, цены и свободные окна проверяйте в Bumpix.</p></div>'
+            '<div class="specialist-grid">' + ''.join(cards) + '</div>'
+            '<p class="note specialist-note">Состав команды может изменяться. Мы обновляем ссылки на действующие профили.</p>')
+
+
 def section(inner, cls='', id_=''):
     return f'<section class="section {cls}"{f" id={chr(34)}{id_}{chr(34)}" if id_ else ""}><div class="wrap">{inner}</div></section>'
 
@@ -274,8 +294,9 @@ def related(cur):
 def tips_block(title, tips, days, what):
     return (f'<div class="grid-2"><div><span class="eyebrow">После процедуры</span><h2>{E(title)}</h2><ul class="tips">' +
             ''.join(f'<li>{E(t)}</li>' for t in tips) +
-            f'</ul></div><div class="route-info"><div class="big">Напомнить о записи</div><p class="muted">Добавим в календарь телефона напоминание через {days // 7} недели со ссылкой на запись.</p>'
-            f'<button class="btn" type="button" data-remind="{days}" data-what="{E(what)}">Добавить в календарь</button></div></div>')
+            '</ul></div><div class="route-info"><div class="big">Когда прийти снова?</div>'
+            '<p class="muted">Срок следующего посещения подскажет мастер. Не создаём выдуманную запись в календаре — выберите доступное время в системе онлайн-записи.</p>'
+            f'<a class="btn" href="{BOOK_ROUTE}">Выбрать мастера и время</a></div></div>')
 
 
 # ---------------------------------------------------------------- pages
@@ -285,7 +306,7 @@ PAGES = {}
 HOME_FAQ = [
     ('Где сделать маникюр в Новых Ватутинках?', 'На 6-й Нововатутинской улице, дом 5, в 5 минутах пешком от ТЦ «Лайнер». Запись онлайн или в Telegram.'),
     ('Сколько стоит маникюр с покрытием?', 'Маникюр с гель-лаком стоит 2 500 ₽ и занимает около 1,5 часа: снятие старого покрытия, маникюр, укрепление и покрытие.'),
-    ('Есть ли подолог в Новых Ватутинках?', 'Да. Подологический педикюр, обработка вросшего ногтя, мозолей и стоп, коррекционные системы. Консультация 700 ₽. Услуги не являются медицинскими.'),
+    ('Что делать, если ноготь врастает в кожу?', 'При боли, воспалении или подозрении на вросший ноготь сначала обратитесь к врачу. Возможность косметического ухода уточняйте отдельно.'),
     ('Делаете ли мужской маникюр?', 'Да, мужской маникюр и педикюр без лака и блеска. Стоимость и свободное время уточняйте в Telegram.'),
     ('Как записаться?', 'Нажмите «Записаться онлайн» и выберите время или напишите в Telegram: сообщение с выбранной услугой подставится само.'),
 ]
@@ -328,7 +349,7 @@ index += f'''<section class="hero home-hero"><div class="wrap hero-grid">
 <ul class="hero-facts"><li>Маникюр с гель-лаком — {rub(svc('mani-gel')['price'])}</li><li>5 минут от ТЦ «Лайнер»</li></ul>
 <div class="hero-actions" data-hero-end>
 <a class="btn hero-primary" href="#calc">Выбрать услугу <span aria-hidden="true">↗</span></a>
-<a class="hero-textlink" href="{B['book_url']}" target="_blank" rel="noopener">Сразу к свободному времени <span aria-hidden="true">→</span></a>
+<a class="hero-textlink" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Сразу к свободному времени <span aria-hidden="true">→</span></a>
 </div>
 </div>
 <div class="hero-editorial" aria-label="Фирменная графическая композиция студии">
@@ -346,6 +367,7 @@ index += f'''<section class="hero home-hero"><div class="wrap hero-grid">
 </div></div>
 '''
 index += section(f'<div class="section-head"><span class="eyebrow">Услуги</span><h2>Что можно сделать</h2></div>{cards_html}', 'alt', 'services')
+index += section(booking_profiles_block(), '', 'specialists')
 index += section(f'''<div class="section-head"><span class="eyebrow">Цены</span><h2>Сколько стоит и сколько займёт</h2><p class="muted">Выберите услугу: сумма и время посчитаются сразу. Значок «i» расскажет, что это за процедура.</p></div>
 <div class="calc" id="calc">
 <div><div class="tabs" role="tablist" aria-label="Категория">{"".join(f'<button class="tab" role="tab" type="button" data-tab="{c["id"]}" aria-selected="{"true" if c["id"] == "mani" else "false"}">{c["title"]}</button>' for c in D["categories"])}</div>
@@ -353,7 +375,7 @@ index += section(f'''<div class="section-head"><span class="eyebrow">Цены</s
 <div class="extras" id="extras" role="group" aria-label="Дополнительно">{"".join(f'<button class="extra" type="button" data-extra="{x["id"]}" aria-pressed="false">+ {x["name"]} <small>{"от " if x["from"] else ""}{rub(x["price"])}</small></button>' for x in D["extras"])}</div>
 <noscript>{price_table([s["id"] for s in SVC])}</noscript></div>
 <aside class="summary" aria-live="polite"><div class="note" style="color:var(--night-muted)">Ориентировочно</div><div class="total" id="total">—</div><div class="time" id="time"></div><ul id="lines"></ul>
-<a class="btn" href="{B['book_url']}" target="_blank" rel="noopener">Выбрать время онлайн</a>
+<a class="btn" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Выбрать время онлайн</a>
 <div class="label">или заявка в Telegram: когда удобно?</div>
 <div class="chips" id="whenDay">{"".join(f'<button class="chip" type="button" aria-pressed="false">{d}</button>' for d in ["Сегодня", "Завтра", "В будни", "В выходные"])}</div>
 <div class="chips" id="whenTime" style="margin-top:8px">{"".join(f'<button class="chip" type="button" aria-pressed="false">{d}</button>' for d in ["Утром", "Днём", "Вечером"])}</div>
@@ -361,22 +383,22 @@ index += section(f'''<div class="section-head"><span class="eyebrow">Цены</s
 <p class="note" style="margin-top:10px">Сообщение с услугой и временем подставится само.</p></aside>
 </div>''', '', 'calc-section')
 index += section(f'''<div class="tryon">
-<div class="hand-stage"><span class="badge">Схема, не фото</span>{hand_svg('almond', True, 'th')}</div>
-<div><span class="eyebrow">Подбор оттенка</span><h2>Примерьте форму и цвет</h2><p class="muted">Посмотрите, как сочетаются форма и оттенок, и отправьте выбор мастеру: он подставится в сообщение.</p>
+<div class="hand-stage" hidden aria-hidden="true">{hand_svg('almond', True, 'th')}</div>
+<div><span class="eyebrow">Подбор оттенка</span><h2>Выберите форму и цвет</h2><p class="muted">Отметьте форму и оттенок — пожелания будут добавлены к сообщению мастеру. Это не примерка по фотографии.</p>
 <div class="ctl"><div class="ctl-label">Форма</div><div class="chips" role="group" aria-label="Форма">{"".join(f'<button class="chip" type="button" data-shape="{k}" aria-pressed="{"true" if k == "almond" else "false"}">{v}</button>' for k, v in [("oval", "Овал"), ("almond", "Миндаль"), ("square", "Квадрат")])}</div></div>
 <div class="ctl"><div class="ctl-label">Оттенок</div><div class="swatches" role="group" aria-label="Оттенок">{sw}</div></div>
 <div class="choice"><span>Ваш выбор: <b id="choice">миндаль, вишня</b></span><button class="link-btn" type="button" id="quizBtn">Подобрать за 3 вопроса</button></div>
 <div class="actions" style="margin-top:14px"><a class="btn" id="sendChoice" href="https://t.me/{B['telegram']}" target="_blank" rel="noopener">{ICON['tg']}Отправить выбор мастеру</a></div>
 </div></div>''', 'alt', 'tryon')
 index += section(f'''<div class="podo">
-<div class="foot" id="foot">{FOOT_SVG}{"".join(f'<button class="hot" type="button" style="left:{x}%;top:{y}%" data-podo="{k}" aria-pressed="{"true" if k == "ingrown" else "false"}" aria-label="{lbl}"></button>' for k, x, y, lbl in PODO_POINTS)}</div>
-<div><span class="eyebrow">Подология</span><h2>Когда нужен не только педикюр</h2><p class="muted">Нажмите на точку на стопе или выберите, что беспокоит.</p>
+<div class="foot-choices" id="foot"><span class="eyebrow">Выберите вопрос</span><p class="muted">Косметический уход за стопами и ногтями. При боли или воспалении обратитесь к врачу.</p>{"".join(f'<button class="hot" type="button" data-podo="{k}" aria-pressed="{"true" if k == "ingrown" else "false"}">{lbl}<span aria-hidden="true">→</span></button>' for k, x, y, lbl in PODO_POINTS)}</div>
+<div><span class="eyebrow">Уход за стопами</span><h2>Вопросы по ногтям и коже стоп</h2><p class="muted">Выберите интересующую тему. Информация не заменяет врачебный осмотр.</p>
 <div class="podo-card"><h3 id="podoTitle">Обработка вросшего ногтя</h3><p id="podoText" class="muted"></p><div class="meta"><div><b id="podoPrice"></b><span>стоимость</span></div><div><b id="podoTime"></b><span>длительность</span></div></div>
-<div class="actions"><a class="btn btn-sm" href="{B['book_url']}" target="_blank" rel="noopener">Записаться</a><button class="btn btn-sm btn-soft" type="button" id="podoMore">Подробнее</button></div></div>
+<div class="actions"><a class="btn btn-sm" href="{BOOK_ROUTE}" target="_blank" rel="noopener">Записаться</a><button class="btn btn-sm btn-soft" type="button" id="podoMore">Подробнее</button></div></div>
 <div class="ctl-label" style="margin-top:20px">Что беспокоит?</div>
 <div class="chips" id="footQuiz">{"".join(f'<button class="chip{" red" if k == "doctor" else ""}" type="button" data-f="{k}" aria-pressed="false">{t}</button>' for k, t in [("ingrown", "Ноготь врезается в кожу"), ("system", "Врастает снова и снова"), ("callus", "Мозоль, больно в обуви"), ("feet", "Сухие пятки, трещины"), ("toes", "Утолщённые ногти"), ("consult", "Не знаю, что это"), ("doctor", "Сильная боль, гной, отёк")])}</div>
 <p class="ans" id="footAns" aria-live="polite"></p>
-<p class="disclaimer">Услуги не являются медицинскими. При боли, воспалении или диабете сначала обратитесь к врачу.</p>
+<p class="disclaimer">При боли, воспалении, выделениях и заболеваниях стоп необходима консультация врача. Перечень допустимых процедур и квалификацию мастера требуется подтвердить.</p>
 <p><a href="podolog-novye-vatutinki.html">Всё о подологии и ценах</a></p></div>
 </div>''', '', 'podo')
 index += section(f'''<div class="men-grid">
@@ -389,9 +411,8 @@ index += section(f'''<div class="men-grid">
 <div class="fear"><b>«Не знаю, что просить»</b><p>Ничего не нужно знать: мастер посмотрит руки и предложит сама.</p></div>
 <div class="fear"><b>«Это не по-мужски»</b><p>Это гигиена, как стрижка у барбера. И женщины замечают ухоженные руки.</p></div>
 </div></div>''', 'dark', 'men')
-index += section(f'''<div class="section-head"><span class="eyebrow">Отзывы</span><h2>Что пишут на Яндекс Картах</h2></div>
-<div class="revs">{"".join(f'<blockquote class="rev"><div class="stars" aria-hidden="true">★★★★★</div><p>«{E(r["text"])}»</p><footer>{E(r["author"])}, Яндекс Карты</footer></blockquote>' for r in D["reviews"])}</div>
-<div class="actions" style="margin-top:18px"><a class="btn btn-line" href="{B['yandex_reviews']}" target="_blank" rel="noopener">Все отзывы на Картах</a><a class="btn btn-soft" href="{B['yandex_reviews']}" target="_blank" rel="noopener" data-goal="review">Оставить отзыв</a><button class="btn btn-soft" type="button" id="shareBtn">Посоветовать подруге</button></div>''', 'alt', 'reviews')
+index += section(f'''<div class="section-head"><span class="eyebrow">Отзывы</span><h2>Отзывы о студии</h2><p class="muted">Посмотрите опубликованные отзывы и фотографии в карточке студии на Яндекс Картах.</p></div>
+<div class="actions"><a class="btn btn-line" href="{B['yandex_reviews']}" target="_blank" rel="noopener">Открыть Яндекс Карты ↗</a><a class="btn btn-soft" href="{B['yandex_reviews']}" target="_blank" rel="noopener" data-goal="review">Оставить отзыв</a></div>''', 'alt', 'reviews')
 index += section(visit_block(), '', 'visit')
 index += section(f'''<div class="grid-2"><div><span class="eyebrow">Вопросы</span><h2>Маникюр и подолог рядом с домом в Новых Ватутинках</h2>
 <p class="muted">Студия на 6-й Нововатутинской улице, в 5 минутах пешком от ТЦ «Лайнер». Удобно прийти из любой части Новых Ватутинок и Десёновского, приехать из Ватутинок и соседних районов ТиНАО.</p>
