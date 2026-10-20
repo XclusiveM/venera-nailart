@@ -64,8 +64,25 @@ for key, url in SOURCES.items():
                 candidates.append({"source": key, "url": candidate})
     report["sources"][key]["extracted_image_candidates"] = len(found)
 
-# Restrict downloads to public *candidate images*; never scrape user accounts.
-chosen = candidates[:24]
+# Consolidate Yandex's repeated thumbnail URLs and its size placeholder to the same public photo.
+# This does not enumerate hidden/private photo IDs, and it does not bypass access controls.
+gallery = []
+seen_photo_ids = set()
+for entry in candidates:
+    u = entry["url"]
+    if "/get-altay/" in u:
+        bits = u.split("/")
+        if len(bits) < 7:
+            continue
+        photo_key = "/".join(bits[:6])
+        if photo_key in seen_photo_ids:
+            continue
+        seen_photo_ids.add(photo_key)
+        gallery.append({**entry, "url": photo_key + "/XXL_height", "photo_id": photo_key})
+# Add any other photo-like sources after core gallery, without icon/avatar/logo services.
+report["gallery_candidates"] = gallery
+# Download only from the photo collection after deduplication.
+chosen = gallery[:72]
 def get_image(index_and_info):
     i, item = index_and_info
     url = item["url"]
@@ -84,7 +101,7 @@ def get_image(index_and_info):
     except Exception as exc:
         return {"n": i, **item, "error": str(exc)[:180]}
 
-with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
     images = list(pool.map(get_image, enumerate(chosen, 1)))
 report["candidate_count"] = len(candidates)
 report["images"] = images
