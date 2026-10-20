@@ -320,21 +320,36 @@ PODO_POINTS = [('ingrown', 36.5, 15.5, 'Вросший ноготь'), ('toes', 
 index = head('Маникюр и педикюр в Новых Ватутинках, подолог в ТиНАО | Венера, ногтевая студия',
              'Маникюр с гель-лаком 2 500 ₽, педикюр, наращивание и подолог в Новых Ватутинках (ТиНАО). 5 минут от ТЦ «Лайнер». Цены, подбор оттенка и онлайн-запись.',
              'index.html', {"@context": "https://schema.org", "@graph": [salon_ld(), faq_ld(HOME_FAQ)]})
-index += f'''<section class="hero"><div class="wrap hero-grid">
-<div><span class="eyebrow" style="color:var(--rose)">Новые Ватутинки · ТиНАО</span>
-<h1>Маникюр, педикюр и&nbsp;подолог <em>рядом с&nbsp;домом</em></h1>
-<p class="lead">Аккуратный маникюр с покрытием за 2 500 ₽, педикюр и уход за стопами. Понятные цены и запись в пару касаний.</p>
-<ul class="hero-facts"><li>5 минут от ТЦ «Лайнер»</li><li>Подология</li><li>Мужской маникюр</li></ul>
-<div class="actions" data-hero-end><a class="btn" href="{B['book_url']}" target="_blank" rel="noopener">Записаться онлайн</a><a class="btn btn-ghost" href="{tg('Здравствуйте! Хочу записаться на маникюр. Подскажите свободное время?')}" target="_blank" rel="noopener">{ICON['tg']}Написать в Telegram</a></div>
+index += f'''<section class="hero home-hero"><div class="wrap hero-grid">
+<div class="hero-copy">
+<span class="eyebrow hero-location"><span class="location-dot" aria-hidden="true"></span> НОВЫЕ ВАТУТИНКИ · МОСКВА</span>
+<h1>Маникюр в Новых Ватутинках.<br><em>Стиль — в деталях.</em></h1>
+<p class="lead">Маникюр, педикюр и уход за ногтями на 6-й Нововатутинской, 5. Понятные цены, спокойная атмосфера и удобная запись.</p>
+<ul class="hero-facts"><li>Маникюр с гель-лаком — {rub(svc('mani-gel')['price'])}</li><li>5 минут от ТЦ «Лайнер»</li></ul>
+<div class="hero-actions" data-hero-end>
+<a class="btn hero-primary" href="#calc">Выбрать услугу <span aria-hidden="true">↗</span></a>
+<a class="hero-textlink" href="{B['book_url']}" target="_blank" rel="noopener">Сразу к свободному времени <span aria-hidden="true">→</span></a>
 </div>
-<div class="hero-art">{hand_svg('almond', False, 'hh')}</div>
+</div>
+<div class="hero-editorial" aria-label="Фирменная графическая композиция студии">
+<div class="hero-editorial-inner">
+<div class="hero-editorial-top"><span>V / N</span><span>VENЕRA<br>NAIL STUDIO</span></div>
+<div class="hero-editorial-main"><span>ЦВЕТ. ФОРМА. УХОД.</span><p>Ваши<br><i>оттенки.</i></p></div>
+<div class="hero-editorial-bottom"><div class="hero-swatch-row" aria-hidden="true"><i style="--sw:#A01B46"></i><i style="--sw:#D9B5A4"></i><i style="--sw:#EAE0D8"></i><i style="--sw:#6C415C"></i></div><span>01 / ЭСТЕТИКА</span></div>
+</div>
+</div>
 </div></section>
+<div class="quick-prices" aria-label="Популярные услуги"><div class="wrap quick-prices-inner">
+<a href="manikyur.html"><span>Маникюр без покрытия</span><strong>{rub(svc('mani-plain')['price'])}</strong></a>
+<a href="manikyur.html"><span>С гель-лаком</span><strong>{rub(svc('mani-gel')['price'])}</strong></a>
+<a href="pedikyur.html"><span>Педикюр</span><strong>от {rub(svc('smart')['price'])}</strong></a>
+</div></div>
 '''
 index += section(f'<div class="section-head"><span class="eyebrow">Услуги</span><h2>Что можно сделать</h2></div>{cards_html}', 'alt', 'services')
 index += section(f'''<div class="section-head"><span class="eyebrow">Цены</span><h2>Сколько стоит и сколько займёт</h2><p class="muted">Выберите услугу: сумма и время посчитаются сразу. Значок «i» расскажет, что это за процедура.</p></div>
 <div class="calc" id="calc">
 <div><div class="tabs" role="tablist" aria-label="Категория">{"".join(f'<button class="tab" role="tab" type="button" data-tab="{c["id"]}" aria-selected="{"true" if c["id"] == "mani" else "false"}">{c["title"]}</button>' for c in D["categories"])}</div>
-<div class="svc-list" id="svcList" role="radiogroup" aria-label="Услуга"></div>
+<div class="svc-list" id="svcList" role="group" aria-label="Выбор услуг"></div>
 <div class="extras" id="extras" role="group" aria-label="Дополнительно">{"".join(f'<button class="extra" type="button" data-extra="{x["id"]}" aria-pressed="false">+ {x["name"]} <small>{"от " if x["from"] else ""}{rub(x["price"])}</small></button>' for x in D["extras"])}</div>
 <noscript>{price_table([s["id"] for s in SVC])}</noscript></div>
 <aside class="summary" aria-live="polite"><div class="note" style="color:var(--night-muted)">Ориентировочно</div><div class="total" id="total">—</div><div class="time" id="time"></div><ul id="lines"></ul>
@@ -344,7 +359,7 @@ index += section(f'''<div class="section-head"><span class="eyebrow">Цены</s
 <div class="chips" id="whenTime" style="margin-top:8px">{"".join(f'<button class="chip" type="button" aria-pressed="false">{d}</button>' for d in ["Утром", "Днём", "Вечером"])}</div>
 <a class="btn btn-ghost" id="sendReq" href="https://t.me/{B['telegram']}" target="_blank" rel="noopener">{ICON['tg']}Отправить заявку</a>
 <p class="note" style="margin-top:10px">Сообщение с услугой и временем подставится само.</p></aside>
-</div>''', '', 'calc')
+</div>''', '', 'calc-section')
 index += section(f'''<div class="tryon">
 <div class="hand-stage"><span class="badge">Схема, не фото</span>{hand_svg('almond', True, 'th')}</div>
 <div><span class="eyebrow">Подбор оттенка</span><h2>Примерьте форму и цвет</h2><p class="muted">Посмотрите, как сочетаются форма и оттенок, и отправьте выбор мастеру: он подставится в сообщение.</p>
