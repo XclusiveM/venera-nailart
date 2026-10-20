@@ -44,6 +44,21 @@ with sync_playwright() as p:
                 if sw > w: err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}')
                 if pg.errs: err.append(f'{kind} {w} {path}: {pg.errs}')
                 pg.close()
+        # Visual regression guard for the mobile-first homepage.
+        for mobile_width in (360, 390):
+            hp = page(br, mobile_width, 'index.html')
+            if not hp.locator('.home-hero h1').is_visible():
+                err.append(f'{kind} {mobile_width}: главный заголовок не отображается')
+            if hp.locator('.home-hero .hero-art').count():
+                err.append(f'{kind} {mobile_width}: мультяшная иллюстрация осталась в первом экране')
+            if not hp.locator('.home-hero .hero-primary').is_visible():
+                err.append(f'{kind} {mobile_width}: нет кнопки выбора услуги')
+            if hp.locator('.quick-prices a').count() != 3:
+                err.append(f'{kind} {mobile_width}: не отображаются три быстрые цены')
+            vh = hp.locator('.home-hero').bounding_box()
+            if vh and vh['height'] > 1100:
+                err.append(f'{kind} {mobile_width}: первый экран чрезмерно высокий ({vh["height"]:.0f}px)')
+            hp.close()
         pg = page(br, 390, 'index.html')
         pg.click('[data-shape=square]'); pg.click('.sw[data-name="Нюд"]')
         if pg.get_attribute('#tryonSvg .s1', 'stop-color') != '#F2D7CE': err.append(f'{kind}: примерка не меняет цвет')
