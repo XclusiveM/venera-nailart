@@ -46,8 +46,24 @@ with sync_playwright() as p:
                 sw = pg.evaluate('document.documentElement.scrollWidth')
                 if sw > w: err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}')
                 if pg.errs: err.append(f'{kind} {w} {path}: {pg.errs}')
+                if path == 'index.html':
+                    if pg.locator('.mcta').count() != 0:
+                        err.append(f'{kind} {w}: фиксированная плашка записи перекрывает контент')
+                    if pg.locator('#foot svg').count() != 0:
+                        err.append(f'{kind} {w}: огромная схема стопы всё ещё видна')
+                    if pg.locator('.tryon .hand-stage:not([hidden])').count() != 0:
+                        err.append(f'{kind} {w}: мультяшная рука всё ещё видна')
+                    for profile in ('188382', '463374'):
+                        if not pg.locator(f'.specialist-card a[href="https://bumpix.net/{profile}"]').count():
+                            err.append(f'{kind} {w}: отсутствует ссылка Bumpix {profile}')
+                    if pg.locator('[data-remind]').count():
+                        err.append(f'{kind} {w}: осталось выдуманное календарное напоминание')
                 if (path == 'index.html' and w in (390, 1440)) or (path == 'muzhskoj-manikyur.html' and w == 390):
                     pg.screenshot(path=str(SNAPSHOTS / f'{kind}-{path.replace(".html", "")}-{w}.png'), full_page=False)
+                if path == 'index.html' and w == 390:
+                    for section in ('calc-section', 'podo', 'specialists'):
+                        pg.locator(f'#{section}').scroll_into_view_if_needed()
+                        pg.screenshot(path=str(SNAPSHOTS / f'{kind}-{section}-390.png'), full_page=False)
                 pg.close()
         # Visual regression guard for the mobile-first homepage.
         for mobile_width in (360, 390):
