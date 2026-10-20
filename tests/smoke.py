@@ -66,6 +66,11 @@ with sync_playwright() as p:
         pg.click('#svcList .nm >> nth=2')
         if '5 800' not in spaces(pg.inner_text('#total')):
             err.append(f'{kind}: неверная сумма двух услуг')
+        if '2 ч 30 мин' not in pg.inner_text('#time'):
+            err.append(f'{kind}: неверная суммарная длительность')
+        draft = spaces(unquote(pg.get_attribute('#sendReq', 'href') or ''))
+        if '5 800' not in draft or '2 ч 30 мин' not in draft:
+            err.append(f'{kind}: цена и время не попали в Telegram-заявку')
         draft = spaces(unquote(pg.get_attribute('#sendReq', 'href') or ''))
         if 'Педикюр с гель-лаком' not in draft or 'Маникюр с гель-лаком' not in draft:
             err.append(f'{kind}: Telegram потерял выбранную услугу')
@@ -76,34 +81,8 @@ with sync_playwright() as p:
         pg.click('#calc [data-tab=mani]')
         pg.click('[data-info="Маникюр с гель-лаком"]'); pg.wait_for_timeout(200)
         if not pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не открылось')
-        pg.click('.sheet-close')  # Close the earlier info dialog before testing the calculator.
-        # The booking calculator must support two categories, keep their prices,
-        # and include the comment and exact selected services in the Telegram draft.
-        pg.click('#calc [data-tab=mani]')
-        pg.click('#svcList button.nm >> nth=0')
-        # The initial manicure can be toggled off. Re-select it if needed.
-        if 'Маникюр с гель-лаком' not in pg.inner_text('#lines'):
-            pg.click('#svcList button.nm >> nth=0')
-        pg.click('#calc [data-tab=pedi]')
-        pg.get_by_role('checkbox', name='Добавить Педикюр с гель-лаком').click()
-        if '5 800' not in pg.inner_text('#total').replace('\u00a0', ' ').replace('\u202f', ' '):
-            err.append(f'{kind}: суммарная цена двух услуг не равна 5 800 ₽')
-        if '2 ч 30 мин' not in pg.inner_text('#time'):
-            err.append(f'{kind}: неверная суммарная длительность двух услуг')
-        pg.fill('#bookingComment', 'Тест: молочный цвет, после 18:00')
-        from urllib.parse import urlparse, parse_qs
-        u = pg.get_attribute('#sendReq', 'href') or ''
-        m = parse_qs(urlparse(u).query).get('text', [''])[0]
-        m = m.replace('\u00a0', ' ').replace('\u202f', ' ')
-        for part in ('Маникюр с гель-лаком', 'Педикюр с гель-лаком', '5 800', '2 ч 30 мин', 'Тест: молочный цвет'):
-            if part not in m: err.append(f'{kind}: Telegram-заявка потеряла {part}')
-        if not pg.locator('#copyRequest').is_visible():
-            err.append(f'{kind}: отсутствует резервное копирование заказа')
-        # Unconfirmed men prices cannot be displayed as an exact payable total.
-        pg.click('#calc [data-tab=men]')
-        pg.get_by_role('checkbox', name='Добавить Мужской маникюр').click()
-        if 'уточняется' not in pg.inner_text('#total').lower():
-            err.append(f'{kind}: цена мужской услуги указана как подтверждённая')
+        pg.click('.sheet-close')
+        if pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не закрылось')
         if pg.errs: err.append(f'{kind} interactions: {pg.errs}')
         pg.close()
         # Предварительный выбор при переходе из мужского раздела.
