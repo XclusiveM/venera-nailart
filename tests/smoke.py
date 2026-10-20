@@ -79,7 +79,7 @@ with sync_playwright() as p:
             err.append(f'{kind}: мужская услуга не выбрана через ссылку')
         if 'Стоимость уточняется' not in pg.inner_text('#total'):
             err.append(f'{kind}: неутверждённая мужская цена показана как окончательная')
-        if pg.errs: err.append(f'{kind} men's deep link: {pg.errs}')
+        if pg.errs: err.append(f'{kind} male deep link: {pg.errs}')
         pg.close()
         pg = page(br, 390, 'podarochnyy-sertifikat.html'); pg.fill('#gTo', 'Ане'); pg.click('[data-gift=him]')
         if 'Ане' not in pg.get_attribute('#gOrder', 'href').encode().decode() and '%D0%90%D0%BD%D0%B5' not in pg.get_attribute('#gOrder', 'href'): err.append(f'{kind}: сертификат без имени в заявке')
