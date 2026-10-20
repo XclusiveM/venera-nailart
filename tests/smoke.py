@@ -76,6 +76,7 @@ with sync_playwright() as p:
         pg.click('#calc [data-tab=mani]')
         pg.click('[data-info="Маникюр с гель-лаком"]'); pg.wait_for_timeout(200)
         if not pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не открылось')
+        pg.click('.sheet-close')  # Close the earlier info dialog before testing the calculator.
         # The booking calculator must support two categories, keep their prices,
         # and include the comment and exact selected services in the Telegram draft.
         pg.click('#calc [data-tab=mani]')
