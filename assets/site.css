@@ -335,6 +335,18 @@ ol.steps li{margin-bottom:8px}
 .booking-entry textarea:focus-visible{outline:3px solid #f3cb90;outline-offset:2px}
 .booking-hint{font-size:12px;line-height:1.5;color:#e2d4df;margin:0 0 4px}
 .booking-entry .btn{margin-top:6px}
+.booking-master-switch{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.booking-master-switch strong{flex-basis:100%}
+.booking-master-switch button[aria-pressed="true"]{background:var(--cherry);border-color:var(--cherry);color:#fff}
+.booking-private{margin-top:22px;padding:18px;border:1px solid var(--cherry);border-radius:16px}
+.booking-private label{display:flex;align-items:flex-start;gap:10px;font-weight:600;cursor:pointer}
+.booking-private input{width:20px;height:20px;flex:none;accent-color:var(--cherry);margin:2px 0}
+.booking-private .booking-hint{color:var(--muted);margin:12px 0;font-size:14px}
+.booking-private-price{font-weight:600;margin:12px 0 0}
+.booking-preview{margin:16px 0}
+.booking-preview summary{font-weight:600;cursor:pointer}
+.booking-preview pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:14px;line-height:1.5}
+.summary li span:last-child{flex-shrink:0}
 .summary .btn[aria-disabled="true"]{opacity:.48;pointer-events:none;cursor:not-allowed}
 .svc .nm{cursor:pointer;min-height:44px;display:flex;align-items:center}
 .svc .nm:focus-visible,.info-btn:focus-visible,.extra:focus-visible{outline:3px solid #9f436d;outline-offset:3px}

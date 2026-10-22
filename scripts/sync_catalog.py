@@ -53,6 +53,15 @@ def validate(d):
             raise ValueError("Нет названия дополнения")
         if type(item.get("price")) is not int or item["price"] < 0:
             raise ValueError("Неверная цена дополнения")
+    policy = d.get('individualVisit')
+    if policy is not None:
+        if policy.get('mode') != 'maximum-overlapping-bookings' or not isinstance(policy.get('masters'), list) or not policy['masters']:
+            raise ValueError('Неверная настройка индивидуального визита')
+        master_ids = set()
+        for master in policy['masters']:
+            if not isinstance(master.get('id'), str) or master['id'] in master_ids or not master.get('label'):
+                raise ValueError('Повтор или неверный мастер индивидуального визита')
+            master_ids.add(master['id'])
     return services, cats, extras
 
 
@@ -65,7 +74,8 @@ def duration(m):
 
 def replace_prices(content, old_services, services):
     by_id = {s["id"]: s for s in services}
-    by_old_name = {s["name"]: by_id[s["id"]] for s in old_services if s["id"] in by_id}
+    by_old_name = {s["name"]: by_id[s["id"]] for s in old_services
+                   if s["id"] in by_id and s.get('master', 'venera') == 'venera'}
 
     def table_repl(match):
         def row_repl(row):
@@ -78,7 +88,10 @@ def replace_prices(content, old_services, services):
                 old_name = html.unescape(button.group(1))
             else:
                 old_name = html.unescape(re.sub(r"<[^>]*>", "", SMALL.sub("", label))).strip()
-            item = by_old_name.get(old_name)
+            stable_id = re.search(r'data-service-id="([^"]+)"', row.group(1))
+            item = by_id.get(stable_id.group(1)) if stable_id else by_old_name.get(old_name)
+            if stable_id and not item:
+                return ''
             if not item:
                 return row.group(0)
             if item.get("status", "published") != "published":
@@ -98,7 +111,8 @@ def replace_prices(content, old_services, services):
             a, b = cells
             inner = row.group(2)
             inner = inner[:a.start(2)] + label + inner[a.end(2):b.start(2)] + html.escape(price) + inner[b.end(2):]
-            return row.group(1) + inner + row.group(3)
+            opening = row.group(1) if stable_id else row.group(1)[:-1] + ' data-service-id="' + item['id'] + '">'
+            return opening + inner + row.group(3)
         return match.group(1) + ROW.sub(row_repl, match.group(2)) + match.group(3)
     return TABLE.sub(table_repl, content)
 
@@ -115,10 +129,10 @@ def check_missing_services(path, services):
     tables = TABLE.findall(source)
     if not tables:
         return ["ceny.html: отсутствует таблица прайса"]
-    text = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", body)) for _, body, _ in tables)
+    ids = set(re.findall(r'data-service-id="([^"]+)"', source))
     missing = [s["name"] for s in services
                if s.get("status", "published") == "published"
-               and s["name"] not in text]
+               and s['id'] not in ids]
     return ["ceny.html: в таблице отсутствует услуга: " + name for name in missing]
 
 
@@ -151,8 +165,35 @@ def process(path, services, cats, extras, write):
     embedded.update(services=[s for s in services if s.get("status", "published") == "published"],
                     cats=cats,
                     extras=[e for e in extras if e.get("status", "published") == "published"])
+    embedded['individualVisit'] = json.loads(DATA.read_text(encoding='utf-8')).get('individualVisit')
     updated = original[:match.start(2)] + json.dumps(embedded, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") + original[match.end(2):]
     updated = replace_prices(updated, old_services, services)
+    if path.name == 'ceny.html':
+        # Canonical full catalog: adding services/master no longer requires editing HTML.
+        rows = []
+        for master, label in [('venera', 'Венера'), ('julia', 'Юлия')]:
+            rows.append('<h2>' + label + '</h2>')
+            if master == 'julia':
+                rows.append('<p class="note">Цены и длительность Юлии требуют подтверждения у мастера.</p>')
+            for cat in cats:
+                items = [s for s in services if s.get('master', 'venera') == master and s['cat'] == cat['id'] and s.get('status', 'published') == 'published']
+                if not items:
+                    continue
+                rows.append('<table class="prices"><tr class="cat"><td colspan="2">' + html.escape(cat['title']) + '</td></tr>')
+                for item in items:
+                    details = ' · '.join(x for x in (duration(item.get('min')), item.get('note', '')) if x)
+                    price = 'По запросу' if item.get('price') is None else f'{item["price"]:,}'.replace(',', ' ') + ' ₽'
+                    rows.append('<tr data-service-id="' + item['id'] + '"><td>' + html.escape(item['name']) + '<small>' + html.escape(details) + '</small></td><td>' + price + '</td></tr>')
+                rows.append('</table>')
+            master_extras = [e for e in extras if e.get('master', 'venera') == master and e.get('status', 'published') == 'published']
+            if master_extras:
+                rows.append('<table class="prices"><tr class="cat"><td colspan="2">Дополнительно</td></tr>')
+                for extra in master_extras:
+                    price = ('от ' if extra.get('from') else '') + f'{extra["price"]:,}'.replace(',', ' ') + ' ₽'
+                    rows.append('<tr><td>' + html.escape(extra['name']) + '</td><td>' + price + '</td></tr>')
+                rows.append('</table>')
+        updated = re.sub(r'(<section class="section "><div class="wrap">).*?(<p class="disclaimer">)',
+                         lambda m: m.group(1) + '\n'.join(rows) + m.group(2), updated, count=1, flags=re.S)
     if updated != original:
         if write:
             path.write_text(updated, encoding="utf-8")

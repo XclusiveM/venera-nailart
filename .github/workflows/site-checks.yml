@@ -18,7 +18,10 @@ jobs:
       - name: Catalog price mutation regression
         run: python3 tests/price_mutation.py
       - name: JS syntax
-        run: node --check assets/site.js
+        run: |
+          node --check assets/site.js
+          node --check assets/booking-pricing.js
+          node tests/booking_pricing.cjs
       - name: Browser smoke test (Chromium + WebKit)
         run: |
           pip install playwright==1.47.0

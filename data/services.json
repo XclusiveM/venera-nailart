@@ -182,10 +182,9 @@
       "name": "Мужской маникюр",
       "price": null,
       "min": null,
-      "note": "Без лака и блеска. Цена — рыночный ориентир, уточняется перед записью",
+      "note": "Без лака и блеска. Запись через Telegram Венеры",
       "status": "published",
-      "master": "venera",
-      "priceStatus": "market-estimate"
+      "master": "venera"
     },
     {
       "id": "men-pedi",
@@ -193,10 +192,9 @@
       "name": "Мужской педикюр",
       "price": null,
       "min": null,
-      "note": "Стопы, ногти, натоптыши. Цена — рыночный ориентир, уточняется перед записью",
+      "note": "Стопы, ногти, натоптыши. Запись через Telegram Венеры",
       "status": "published",
-      "master": "venera",
-      "priceStatus": "market-estimate"
+      "master": "venera"
     },
     {
       "id": "men-both",
@@ -204,10 +202,9 @@
       "name": "Мужской маникюр и педикюр",
       "price": null,
       "min": null,
-      "note": "За один визит. Цена — рыночный ориентир, уточняется перед записью",
+      "note": "За один визит. Запись через Telegram Венеры",
       "status": "published",
-      "master": "venera",
-      "priceStatus": "market-estimate"
+      "master": "venera"
     },
     {
       "id": "julia-mani",
@@ -329,5 +326,18 @@
       "status": "published"
     }
   ],
-  "pricingNote": "Цены Юлии из доступной индексированной версии Bumpix, требуют проверки; мужские цены — ориентиры рынка, не утверждённый прайс."
+  "pricingNote": "Цены и длительности Юлии требуют проверки у мастера. Мужские услуги — запись через Telegram Венеры; стоимость и длительность пока не внесены в каталог.",
+  "individualVisit": {
+    "mode": "maximum-overlapping-bookings",
+    "masters": [
+      {
+        "id": "venera",
+        "label": "Венера"
+      },
+      {
+        "id": "julia",
+        "label": "Юлия"
+      }
+    ]
+  }
 }

@@ -38,6 +38,7 @@
       return !item.status || item.status === 'published';
     });
     CFG.cats = catalog.categories;
+    CFG.individualVisit = catalog.individualVisit;
   } catch (error) {
     if (window.console) console.warn('[catalog] Встроенный прайс используется как резервный', error);
   }
@@ -45,9 +46,10 @@
      с пользовательскими данными. Скрытые услуги убираем из таблиц. */
   function syncPriceTables() {
     var byName = {}, byId = {};
-    (CFG.services || []).forEach(function (item) { byId[item.id] = item; byName[item.name] = item; });
+    (CFG.services || []).forEach(function (item) { byId[item.id] = item; if ((item.master || 'venera') === 'venera') byName[item.name] = item; });
     var originalByName = {};
     ORIGINAL_SERVICES.forEach(function (item) {
+      if ((item.master || 'venera') !== 'venera') return;
       originalByName[item.name] = item;
       if (byId[item.id]) byName[item.name] = byId[item.id];
     });
@@ -61,7 +63,9 @@
         clone.querySelectorAll('small,button').forEach(function (n) { n.remove(); });
         raw = clone.textContent.trim();
       }
-      var item = byName[raw];
+      var rowId = row.dataset.serviceId;
+      var item = rowId ? byId[rowId] : byName[raw];
+      if (rowId && !item && catalogLoaded) { row.hidden = true; return; }
       if (!item && catalogLoaded && originalByName[raw]) { row.hidden = true; return; }
       if (!item) return;
       if (item.status && item.status !== 'published') { row.hidden = true; return; }
@@ -147,14 +151,15 @@
   function safeHref(url) { try { var u = new URL(url, location.href); return u.protocol === 'https:' || u.protocol === 'http:' ? esc(u.href) : '#'; } catch (e) { return '#'; } }
 
   /* ---------- «Что это?» ---------- */
-  function openInfo(name) {
-    var d = INFO[name]; if (!d) return; var s = find(name);
+  function openInfo(name, serviceId) {
+    var d = INFO[name]; if (!d) return; var s = serviceId ? SVC.find(function(item){return item.id===serviceId;}) : find(name);
     var meta = s ? '<div class="sheet-meta"><span>' + fmt(s.price) + '</span>' + (s.min ? '<span>' + dur(s.min) + '</span>' : '') + '</div>' : '';
+    var bookingUrl = s && s.cat === 'men' ? tgUrl('Здравствуйте! Хочу записаться: ' + name + '.') : s && s.master === 'julia' ? 'https://bumpix.net/463374' : CFG.book;
     openSheet('<h3 id="sheetTitle">' + esc(name) + '</h3>' + meta + '<h4>Что это</h4><p>' + esc(d.what) + '</p><h4>Откуда пошло</h4><p>' + esc(d.origin) + '</p><h4>Кому подходит</h4><p>' + esc(d.why) + '</p>' +
-      '<div class="actions" style="margin-top:16px"><a class="btn" href="' + safeHref(CFG.book) + '" target="_blank" rel="noopener">Записаться</a><a class="btn btn-line" href="' + safeHref(tgUrl('Здравствуйте! Хочу записаться: ' + name.toLowerCase() + '.')) + '" target="_blank" rel="noopener">Спросить в Telegram</a></div>');
+      '<div class="actions" style="margin-top:16px"><a class="btn" href="' + safeHref(bookingUrl) + '" target="_blank" rel="noopener">'+(s && s.cat === 'men' ? 'Написать Венере' : 'Записаться')+'</a><a class="btn btn-line" href="' + safeHref(tgUrl('Здравствуйте! Хочу записаться: ' + name.toLowerCase() + '.')) + '" target="_blank" rel="noopener">Спросить в Telegram</a></div>');
     goal('info_open');
   }
-  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-info]'); if (b) { e.preventDefault(); openInfo(b.dataset.info); } });
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-info]'); if (b) { e.preventDefault(); var row=b.closest('[data-service-id]');openInfo(b.dataset.info,b.dataset.serviceId||(row&&row.dataset.serviceId)); } });
 
   /* ---------- Калькулятор: несколько услуг, комментарий и честный итог ---------- */
   var tryonState = { shape: 'миндаль', shade: 'вишня', touched: false };
@@ -165,7 +170,7 @@
     var masterSelect=document.createElement('div');masterSelect.className='booking-master-switch';masterSelect.setAttribute('role','group');masterSelect.setAttribute('aria-label','Выбор мастера');
     var masterLabel=document.createElement('strong');masterLabel.textContent='1. Выберите мастера';masterSelect.append(masterLabel);
     [['venera','Венера'],['julia','Юлия']].forEach(function(pair){var button=document.createElement('button');button.type='button';button.className='btn btn-line';button.textContent=pair[1];button.dataset.master=pair[0];button.addEventListener('click',function(){master=pair[0];picks={};addons={};tab='mani';render();});masterSelect.append(button);});
-    root.insertBefore(masterSelect,root.firstChild);
+    list.parentNode.insertBefore(masterSelect,list.parentNode.firstChild);
     var groups = {
       mani: [{title:'Маникюр',ids:['mani-gel','mani-plain']},{title:'Наращивание и коррекция',ids:['ext','corr-gel','corr-poly']}],
       pedi: [{title:'Педикюр',ids:['smart','pedi-toes','pedi-gel']}],
@@ -175,12 +180,13 @@
     var sectionIntro = {mani:'Выберите один вариант маникюра. Наращивание и коррекция — альтернативы, а не дополнительные услуги.',
       pedi:'Выберите один вариант педикюра: процедуры различаются составом и не суммируются.',
       podo:'Выберите одну основную процедуру для предварительного расчёта. Совмещение обработок и необходимость дополнительных процедур согласовываются с мастером.',
-      men:'Мужские цены — предварительные рыночные ориентиры, окончательную стоимость подтвердит мастер.'};
+      men:'Мужские услуги записывает Венера в Telegram. Выберите уход и добавьте пожелания; цену и длительность она подтвердит в переписке.'};
     var requested = new URLSearchParams(location.search).get('service');
     var initial = SVC.find(function(s){return s.id === requested;});
     if (initial) {master=initial.master||'venera';tab=initial.cat;picks[tab]=initial.id;}
     else {picks.mani='mani-gel';}
-    (CFG.extras||[]).forEach(function(x){if((x.master||'venera')!=='julia')return;var button=document.createElement('button');button.type='button';button.className='extra';button.dataset.extra=x.id;button.setAttribute('aria-pressed','false');button.textContent=x.name+' · '+(x.from?'от ':'')+fmt(x.price);extrasBox.append(button);});
+    extrasBox.replaceChildren();
+    (CFG.extras||[]).forEach(function(x){var button=document.createElement('button');button.type='button';button.className='extra';button.dataset.extra=x.id;button.setAttribute('aria-pressed','false');button.textContent=x.name+' · '+(x.from?'от ':'')+fmt(x.price);extrasBox.append(button);});
     var banner = document.createElement('div');banner.className='booking-selection booking-selection-v2';banner.setAttribute('role','status');
     var selectionText=document.createElement('strong');
     var reset=document.createElement('button');reset.type='button';reset.className='booking-reset';reset.textContent='Очистить';
@@ -191,13 +197,30 @@
     noteInput=document.createElement('textarea');noteInput.id='bookingComment';noteInput.rows=2;noteInput.maxLength=500;
     noteInput.placeholder='Например: хочу маникюр и педикюр в один визит';
     var hint=document.createElement('p');hint.className='booking-hint';hint.textContent='Расчёт предварительный. Совместимость, длительность и итоговую стоимость подтверждает мастер.';
-    copyButton=document.createElement('button');copyButton.type='button';copyButton.className='btn btn-line';copyButton.textContent='Скопировать список';
+    copyButton=document.createElement('button');copyButton.type='button';copyButton.id='copyRequest';copyButton.className='btn btn-line';copyButton.textContent='Скопировать список';
     statusNode=document.createElement('span');statusNode.className='booking-hint';statusNode.setAttribute('role','status');
     wrap.append(label,noteInput,hint,copyButton,statusNode);
     var send=$('#sendReq');send.parentNode.insertBefore(wrap,send);
+    var privateBox=document.createElement('div');privateBox.className='booking-private';
+    var privateLabel=document.createElement('label');
+    var privateInput=document.createElement('input');privateInput.type='checkbox';privateInput.id='privateVisit';
+    privateInput.setAttribute('aria-describedby','privateVisitHelp privateVisitPrice');
+    var privateTitle=document.createElement('span');privateTitle.textContent='Индивидуальный визит — без других клиентов';
+    privateLabel.append(privateInput,privateTitle);
+    var privateHelp=document.createElement('p');privateHelp.id='privateVisitHelp';privateHelp.className='booking-hint';
+    privateHelp.textContent='Доплата по максимальной стоимости записей, которые перекрывает визит. Услуга, пересекающая его окончание, учитывается целиком. Расписание не синхронизируется; дату и отсутствие других клиентов подтверждает Венера.';
+    var privatePrice=document.createElement('p');privatePrice.id='privateVisitPrice';privatePrice.className='booking-private-price';
+    privatePrice.setAttribute('role','status');privateBox.append(privateLabel,privateHelp,privatePrice);
+    list.parentNode.append(privateBox);
+    var bookingLink=$('.summary > a.btn:not(#sendReq)',root);
+    var preview=document.createElement('details');preview.className='booking-preview';
+    var previewLabel=document.createElement('summary');previewLabel.textContent='Посмотреть текст заявки';
+    var previewText=document.createElement('pre');previewText.id='requestPreview';preview.append(previewLabel,previewText);
+    send.parentNode.insertBefore(preview,send);
     function available(){return SVC.filter(function(s){return (s.master||'venera')===master;});}
     function chosen(){return ['mani','pedi','men','podo'].map(function(cat){return available().find(function(s){return s.id===picks[cat];});}).filter(Boolean);}
-    function extras(){return !!picks.mani && (CFG.extras||[]).filter(function(x){return (x.master||'venera')===master && !!addons[x.id];}) || [];}
+    function canAddExtras(){return ['mani-gel','julia-gel','julia-hard-gel','julia-hard-poly','julia-ext'].indexOf(picks.mani)>=0;}
+    function extras(){return canAddExtras() ? (CFG.extras||[]).filter(function(x){return (x.master||'venera')===master && !!addons[x.id];}) : [];}
     function clearConflicts(s){
       if(s.cat==='podo'){delete picks.mani;delete picks.pedi;delete picks.men;addons={};}
       else{
@@ -212,10 +235,10 @@
       }
     }
     function select(s){if(picks[s.cat]===s.id)delete picks[s.cat];else{clearConflicts(s);picks[s.cat]=s.id;}
-      if(!picks.mani)addons={};render();}
+      if(!canAddExtras())addons={};render();}
     function render(){
       list.replaceChildren();help.textContent=sectionIntro[tab];
-      $('.booking-master-switch button',root).forEach(function(btn){btn.setAttribute('aria-pressed',String(btn.dataset.master===master));});
+      $$('.booking-master-switch button',root).forEach(function(btn){btn.setAttribute('aria-pressed',String(btn.dataset.master===master));});
       var displayGroups=master==='julia' ? {mani:[{title:'Маникюр, укрепление и наращивание',ids:['julia-mani','julia-gel','julia-hard-gel','julia-hard-poly','julia-ext','julia-remove']}],pedi:[{title:'Педикюр',ids:['julia-toes']}],podo:[],men:[]} : groups;
       (displayGroups[tab]||[]).forEach(function(g){
         var group=document.createElement('section');group.className='booking-group';
@@ -230,25 +253,41 @@
           var title=document.createElement('span');title.className='booking-service-name';title.textContent=s.name;
           if(s.note){var detail=document.createElement('small');detail.textContent=s.note;title.append(detail);}
           btn.append(dot,title);btn.addEventListener('click',function(){select(s);});row.append(btn);
-          if(INFO[s.name]){var info=document.createElement('button');info.type='button';info.className='info-btn';info.textContent='i';info.dataset.info=s.name;info.setAttribute('aria-label','Подробнее: '+s.name);row.append(info);}
+          if(INFO[s.name]){var info=document.createElement('button');info.type='button';info.className='info-btn';info.textContent='i';info.dataset.info=s.name;info.dataset.serviceId=s.id;info.setAttribute('aria-label','Подробнее: '+s.name);row.append(info);}
           var price=document.createElement('div');price.className='pr';price.textContent=s.price==null?'По запросу':fmt(s.price);
           if(s.min){var time=document.createElement('small');time.textContent=dur(s.min);price.append(time);}
           row.append(price);choices.append(row);
         });
         group.append(choices);list.append(group);
       });
-      var extraVisible=tab==='mani'&&!!picks.mani;extrasBox.hidden=!extraVisible;
-      $('.extra',root).forEach(function(el){var x=(CFG.extras||[]).find(function(e){return e.id===el.dataset.extra;});el.hidden=!x||(x.master||'venera')!==master;});
+      var extraVisible=tab==='mani'&&canAddExtras();extrasBox.hidden=!extraVisible;
+      $$('.extra',root).forEach(function(el){var x=(CFG.extras||[]).find(function(e){return e.id===el.dataset.extra;});el.hidden=!x||(x.master||'venera')!==master;});
       $$('.extra',root).forEach(function(el){el.setAttribute('aria-pressed',String(extraVisible&&!!addons[el.dataset.extra]));});
-      $$('.tab',root).forEach(function(el){el.setAttribute('aria-selected',String(el.dataset.tab===tab));});
+      $$('.tab',root).forEach(function(el){el.hidden=!available().some(function(s){return s.cat===el.dataset.tab;});el.setAttribute('aria-selected',String(el.dataset.tab===tab));});
       recalc();
     }
     function selectedChip(id){var el=$('#'+id+' [aria-pressed="true"]');return el?el.textContent.trim().toLowerCase():'';}
     function recalc(){
       var sv=chosen(),add=extras(),unknown=sv.some(function(x){return x.price==null;});
       var price=sv.reduce(function(v,x){return v+(x.price||0);},0)+add.reduce(function(v,x){return v+x.price;},0);
-      var mins=sv.length&&sv.every(function(x){return Number.isFinite(x.min)&&x.min>0;})?sv.reduce(function(v,x){return v+x.min;},0):null;
-      var approx=add.some(function(x){return x.from;})||sv.some(function(x){return x.priceStatus==='market-estimate';});
+      var timed=sv.concat(add);
+      var mins=sv.length&&timed.every(function(x){return Number.isInteger(x.min)&&x.min>0;})?timed.reduce(function(v,x){return v+x.min;},0):null;
+      var fromPrice=add.some(function(x){return x.from;});
+      var approx=sv.some(function(x){return !!x.priceStatus;});
+      var privateQuote=null;
+      if(!unknown&&mins!=null&&window.BookingPricing){
+        privateQuote=window.BookingPricing.individualVisit(SVC,CFG.individualVisit,master,price,mins);
+      }
+      privatePrice.textContent=!sv.length?'Выберите услуги для расчёта доплаты':privateQuote ? 'Доплата: '+fmt(privateQuote.surcharge)+' за '+dur(mins) : 'Доплата по запросу: нужны полные цены и длительности всех выбранных услуг';
+      var privateUnknown=privateInput.checked&&!privateQuote;
+      var finalPrice=privateInput.checked&&privateQuote?privateQuote.total:price;
+      approx=approx||(privateInput.checked&&privateQuote&&privateQuote.estimated);
+      var pricePrefix=fromPrice?'от ':approx?'≈ ':'';
+      var totalText=unknown||privateUnknown?'Стоимость уточняется':pricePrefix+fmt(finalPrice);
+      bookingLink.hidden=!!picks.men||privateInput.checked||!sv.length;
+      if(master==='julia'){bookingLink.href='https://bumpix.net/463374';bookingLink.target='_blank';bookingLink.rel='noopener';}
+      else {bookingLink.href=CFG.book;bookingLink.target='_blank';bookingLink.rel='noopener';}
+      statusNode.textContent='';
       var names=sv.map(function(x){return x.name;});
       selectionText.textContent=names.length?'В вашем списке: '+names.join(' + '):'Услуги не выбраны';
       reset.hidden=!names.length;
@@ -256,28 +295,37 @@
       function line(a,b){var li=document.createElement('li'),left=document.createElement('span'),right=document.createElement('span');left.textContent=a;right.textContent=b;li.append(left,right);lines.append(li);}
       sv.forEach(function(x){line(x.name,x.price==null?'По запросу':fmt(x.price));});
       add.forEach(function(x){line('Дополнительно: '+x.name,(x.from?'от ':'+')+fmt(x.price));});
+      if(privateInput.checked&&sv.length)line('Индивидуальный визит',privateQuote?'+ '+fmt(privateQuote.surcharge):'По запросу');
       var total=$('#total'),time=$('#time');
-      if(!sv.length){total.textContent='Выберите услугу';total.classList.add('ask');time.textContent='';message='';send.removeAttribute('href');send.setAttribute('aria-disabled','true');copyButton.disabled=true;return;}
-      total.textContent=unknown?'Стоимость уточняется':(approx?'от ':'')+fmt(price);
-      total.classList.toggle('ask',unknown);
-      time.textContent=mins==null?'Время уточняется':'≈ '+dur(mins)+(add.length?' + время дизайна':'');
+      if(!sv.length){total.textContent='Выберите услугу';total.classList.add('ask');time.textContent='';message='';previewText.textContent='Выберите услуги';send.removeAttribute('href');send.setAttribute('aria-disabled','true');copyButton.disabled=true;return;}
+      total.textContent=totalText;
+      total.classList.toggle('ask',unknown||privateUnknown);
+      time.textContent=mins==null?'Время уточняется':'≈ '+dur(mins);
       var parts=['Здравствуйте! Хочу записаться к '+(master==='julia'?'Юлии':'Венере')+' на следующие услуги:'];
       sv.forEach(function(x){parts.push('• '+x.name+' — '+(x.price==null?'по запросу':fmt(x.price)));});
       add.forEach(function(x){parts.push('• '+x.name+' — '+(x.from?'от ':'')+fmt(x.price));});
-      parts.push('','Предварительная стоимость: '+(unknown?'уточняется':(approx?'от ':'')+fmt(price)));
-      parts.push('Предварительное время: '+(mins==null?'уточняется':dur(mins)+(add.length?' + время дизайна':'')));
+      if(privateInput.checked){
+        parts.push('','Индивидуальный визит — без других клиентов.');
+        parts.push('Стоимость выбранных услуг: '+(unknown?'по запросу':fmt(price)));
+        parts.push('Доплата: '+(privateQuote?fmt(privateQuote.surcharge):'по запросу'));
+        if(privateQuote)privateQuote.breakdown.forEach(function(x){parts.push('  '+x.label+': '+fmt(x.surcharge));});
+        parts.push('Расчёт по максимальным перекрываемым записям, без проверки расписания.');
+      }
+      parts.push('','Предварительная стоимость: '+(unknown||privateUnknown?'уточняется':pricePrefix+fmt(finalPrice)));
+      parts.push('Предварительное время: '+(mins==null?'уточняется':dur(mins)));
       if(picks.mani&&tryonState.touched)parts.push('Пожелания: форма '+tryonState.shape+', оттенок '+tryonState.shade+'.');
       var day=selectedChip('whenDay'),hour=selectedChip('whenTime');
       if(day||hour)parts.push('Удобное время: '+[day,hour].filter(Boolean).join(', ')+'.');
       if(noteInput.value.trim())parts.push('Комментарий: '+noteInput.value.trim());
-      parts.push('','Подскажите, пожалуйста, можно ли совместить выбранные процедуры в один визит и подтвердите стоимость и время.');
-      message=parts.join('\n');send.href=tgUrl(message);send.removeAttribute('aria-disabled');copyButton.disabled=false;
+      parts.push('','Подтвердите, пожалуйста, стоимость и время'+(privateInput.checked?', а также возможность визита без других клиентов':'')+'. Это заявка, время ещё не забронировано.');
+      message=parts.join('\n');previewText.textContent=message;send.href=tgUrl(message);send.removeAttribute('aria-disabled');copyButton.disabled=false;
     }
-    reset.addEventListener('click',function(){picks={};addons={};render();});
+    reset.addEventListener('click',function(){picks={};addons={};privateInput.checked=false;render();});
     $$('.tab',root).forEach(function(el){el.addEventListener('click',function(){tab=el.dataset.tab;render();});});
-    $$('.extra',root).forEach(function(el){el.addEventListener('click',function(){if(!picks.mani)return;addons[el.dataset.extra]=!addons[el.dataset.extra];render();});});
+    $$('.extra',root).forEach(function(el){el.addEventListener('click',function(){if(!canAddExtras())return;addons[el.dataset.extra]=!addons[el.dataset.extra];render();});});
     ['whenDay','whenTime'].forEach(function(id){$$('#'+id+' .chip').forEach(function(el){el.addEventListener('click',function(){var on=el.getAttribute('aria-pressed')!=='true';$$('#'+id+' .chip').forEach(function(x){x.setAttribute('aria-pressed','false');});el.setAttribute('aria-pressed',String(on));recalc();});});});
     noteInput.addEventListener('input',recalc);document.addEventListener('tryon:change',recalc);
+    privateInput.addEventListener('change',recalc);
     copyButton.addEventListener('click',function(){if(!message)return;if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(message).then(function(){statusNode.textContent='Список скопирован';}).catch(function(){statusNode.textContent='Не удалось скопировать';});else statusNode.textContent='Скопируйте список через кнопку отправки';});
     send.addEventListener('click',function(e){if(!message)e.preventDefault();});
     render();
