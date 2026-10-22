@@ -56,7 +56,7 @@ def validate(d):
             raise ValueError("Неверная цена дополнения")
     policy = d.get('individualVisit')
     if policy is not None:
-        if policy.get('mode') != 'maximum-overlapping-bookings' or not isinstance(policy.get('masters'), list) or not policy['masters']:
+        if policy.get('mode') != 'maximum-time-rate' or not isinstance(policy.get('masters'), list) or not policy['masters']:
             raise ValueError('Неверная настройка индивидуального визита')
         master_ids = set()
         for master in policy['masters']:

@@ -237,7 +237,7 @@
     var privateTitle=document.createElement('span');privateTitle.textContent='Индивидуальный визит — без других клиентов';
     privateLabel.append(privateInput,privateTitle);
     var privateHelp=document.createElement('p');privateHelp.id='privateVisitHelp';privateHelp.className='booking-hint';
-    privateHelp.textContent='Доплата по максимальной стоимости записей, которые перекрывает визит. Услуга, пересекающая его окончание, учитывается целиком. Расписание не синхронизируется; дату и отсутствие других клиентов подтверждает Венера.';
+    privateHelp.textContent='Доплата только за время вашего визита: по максимальной стоимости минуты работы каждого мастера, за вычетом уже оплаченной услуги. Расписание не синхронизируется; дату и отсутствие других клиентов подтверждает Венера.';
     var privatePrice=document.createElement('p');privatePrice.id='privateVisitPrice';privatePrice.className='booking-private-price';
     privatePrice.setAttribute('role','status');privateBox.append(privateLabel,privateHelp,privatePrice);
     if (mensManicurePage) list.parentNode.append(privateBox);
@@ -348,7 +348,7 @@
         parts.push('Стоимость выбранных услуг: '+(unknown?'по запросу':fmt(price)));
         parts.push('Доплата: '+(privateQuote?fmt(privateQuote.surcharge):'по запросу'));
         if(privateQuote)privateQuote.breakdown.forEach(function(x){parts.push('  '+x.label+': '+fmt(x.surcharge));});
-        parts.push('Расчёт по максимальным перекрываемым записям, без проверки расписания.');
+        parts.push('Расчёт только за время визита по максимальным тарифам мастеров, за вычетом выбранных услуг. Расписание не проверяется.');
       }
       parts.push('','Предварительная стоимость: '+(unknown||privateUnknown?'уточняется':pricePrefix+fmt(finalPrice)));
       parts.push('Предварительное время: '+(mins==null?'уточняется':dur(mins)));
