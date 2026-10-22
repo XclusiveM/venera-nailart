@@ -78,3 +78,20 @@
 2. Квиз `#quizBtn` около строки 318: HTML формируется из константного массива `Q`, объявленного непосредственно в JS. Значения пользователя не конкатенируются в HTML; выбранные результаты записываются через `textContent`.
 
 Остальные применения: `esc()` использует `textContent` для безопасного HTML-кодирования; `giftOpts` очищается через `replaceChildren`; cookie-баннер использует фиксированную строку HTML без пользовательских данных. Это **анализ кода**, а не динамический тест XSS.
+
+### Первые 10 строк `artifacts/overflow-results.csv` (GitHub Actions 39737498092)
+
+```csv
+browser,page,viewport_px,scroll_width_px,result
+chromium,ceny.html,320,320,PASS
+chromium,idei-manikyura.html,320,320,PASS
+chromium,index.html,320,320,PASS
+chromium,kontakty.html,320,320,PASS
+chromium,manikyur.html,320,320,PASS
+chromium,muzhskoj-manikyur.html,320,320,PASS
+chromium,nail-studio.html,320,320,PASS
+chromium,narashchivanie-nogtey.html,320,320,PASS
+chromium,pedikyur.html,320,320,PASS
+```
+
+Это фактические строки из шага `Show first ten overflow CSV rows`, а не результат предположений. Матрица содержит 120 проверок, но в том запуске был один FAIL: `webkit 320 nail-studio.html`.
