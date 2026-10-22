@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "publicationStatus": "draft",
+  "seo": {
+    "allowIndexing": false,
+    "defaultTitle": "Венера NAILART — маникюр и педикюр в Новых Ватутинках",
+    "defaultDescription": "Маникюр, педикюр и уход за ногтями в Новых Ватутинках. Услуги, цены и запись.",
+    "siteUrl": ""
+  },
+  "analytics": {
+    "yandexMetrikaId": "",
+    "vkPixelId": "",
+    "googleAnalyticsMeasurementId": "",
+    "googleTagManagerId": "",
+    "googleAdsId": "",
+    "topMailRuId": ""
+  },
+  "events": [
+    "booking_click",
+    "telegram_click",
+    "phone_click"
+  ],
+  "notes": "Идентификаторы вводятся только после подтверждения владельца. Необязательные счётчики загружаются только при допустимом согласии посетителя. Не включать индексацию без разрешения."
+}
