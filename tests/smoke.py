@@ -98,7 +98,12 @@ with sync_playwright() as p:
                 booking.keyboard.press('Escape')
                 if dialog.is_visible():
                     err.append(f'{kind}: Escape не закрыл окно записи')
-                if booking.locator('#booking-v3-frame').get_attribute('src'):
+                try:
+                    booking.wait_for_function(
+                        "() => !document.querySelector('#booking-v3-frame').hasAttribute('src')",
+                        timeout=3000
+                    )
+                except Exception:
                     err.append(f'{kind}: iframe не очищен после закрытия')
                 if not trigger.evaluate('(el) => document.activeElement === el'):
                     err.append(f'{kind}: фокус не возвращён кнопке записи')
