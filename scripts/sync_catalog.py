@@ -136,7 +136,7 @@ def stale_price_locations(path, old_services, services):
     for old in old_services:
         new = current.get(old.get("id"))
         before = old.get("price")
-        if not new or before is None or before == new.get("price") or before in valid_prices:
+        if not new or before is None or before == new.get("price"):
             continue
         # Match either spaces, NBSP or narrow NBSP as thousand separators.
         digits = str(before)
