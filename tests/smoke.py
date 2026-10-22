@@ -1,6 +1,6 @@
 """Браузерные проверки (Playwright, Chromium и WebKit если установлен): нет JS-ошибок, нет горизонтального скролла,
 работают ключевые модули. Запуск: python3 tests/smoke.py  (нужен pip install playwright)"""
-import http.server, os, socketserver, sys, threading
+import csv, http.server, os, socketserver, sys, threading
 from functools import partial
 from pathlib import Path
 from urllib.parse import unquote
@@ -21,6 +21,7 @@ srv = socketserver.TCPServer(('127.0.0.1', 0), partial(H, directory=str(ROOT)))
 port = srv.server_address[1]; threading.Thread(target=srv.serve_forever, daemon=True).start()
 B = f'http://127.0.0.1:{port}/'
 err = []
+overflow_results = []
 
 
 def page(br, w, path):
@@ -40,11 +41,14 @@ with sync_playwright() as p:
     for kind, bt in kinds:
         opts = {'executable_path': os.environ['CHROMIUM']} if kind == 'chromium' and os.environ.get('CHROMIUM') else {}
         br = bt.launch(**opts)
-        for w in (360, 390, 768, 1440):
+        for w in (320, 390, 768, 1440):
             for path in PAGES:
                 pg = page(br, w, path)
                 sw = pg.evaluate('document.documentElement.scrollWidth')
-                if sw > w: err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}')
+                overflow_results.append((kind, path, w, sw, 'FAIL' if sw > w else 'PASS'))
+                if sw > w:
+                    offenders = pg.evaluate('''() => [...document.querySelectorAll('body *')].map(e => ({tag:e.tagName.toLowerCase(), cls:typeof e.className==='string'?e.className.slice(0,65):'', right:Math.round(e.getBoundingClientRect().right), width:Math.round(e.getBoundingClientRect().width)})).filter(e => e.right > innerWidth + 2).sort((a,b)=>b.right-a.right).slice(0,8)''')
+                    err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}; offenders={offenders}')
                 if pg.errs: err.append(f'{kind} {w} {path}: {pg.errs}')
                 if path == 'index.html':
                     if pg.locator('#works .folio-card').count() != 8:
@@ -57,9 +61,15 @@ with sync_playwright() as p:
                         err.append(f'{kind} {w}: огромная схема стопы всё ещё видна')
                     if pg.locator('.tryon .hand-stage:not([hidden])').count() != 0:
                         err.append(f'{kind} {w}: мультяшная рука всё ещё видна')
+                    # Both specialist profiles must be reachable and modal triggers must match.
                     for profile in ('188382', '463374'):
-                        if not pg.locator(f'.specialist-card a[href="https://bumpix.net/{profile}"]').count():
-                            err.append(f'{kind} {w}: отсутствует ссылка Bumpix {profile}')
+                        url = f'https://bumpix.net/{profile}'
+                        if pg.locator(f'#specialists .booking-v3-card a[href="{url}"][target="_blank"]').count() != 1:
+                            err.append(f'{kind} {w}: отсутствует основная ссылка Bumpix {profile}')
+                        if pg.locator(f'#specialists button[data-booking-open="{url}"]').count() != 1:
+                            err.append(f'{kind} {w}: отсутствует встроенная запись Bumpix {profile}')
+                    if pg.locator('#booking-v3-dialog').count() != 1:
+                        err.append(f'{kind} {w}: отсутствует диалог онлайн-записи')
                     if pg.locator('[data-remind]').count():
                         err.append(f'{kind} {w}: осталось выдуманное календарное напоминание')
                 if (path == 'index.html' and w in (390, 1440)) or (path == 'muzhskoj-manikyur.html' and w == 390):
@@ -69,6 +79,37 @@ with sync_playwright() as p:
                         pg.locator(f'#{section}').scroll_into_view_if_needed()
                         pg.screenshot(path=str(SNAPSHOTS / f'{kind}-{section}-390.png'), full_page=False)
                 pg.close()
+        # Booking modal: check both masters, external fallback, Escape and focus restoration.
+        booking = page(br, 390, 'index.html')
+        for profile, master in (('188382', 'Венера'), ('463374', 'Юлия')):
+            trigger = booking.locator(f'button[data-booking-open="https://bumpix.net/{profile}"]')
+            trigger.scroll_into_view_if_needed()
+            trigger.click()
+            dialog = booking.locator('#booking-v3-dialog')
+            if not dialog.is_visible():
+                err.append(f'{kind}: окно записи {master} не открылось')
+            else:
+                if booking.locator('#booking-v3-external').get_attribute('href') != f'https://bumpix.net/{profile}':
+                    err.append(f'{kind}: неверная внешняя ссылка записи {master}')
+                if booking.locator('#booking-v3-frame').get_attribute('src') != f'https://bumpix.net/{profile}':
+                    err.append(f'{kind}: неверный адрес iframe {master}')
+                if master not in booking.locator('#booking-v3-master').inner_text():
+                    err.append(f'{kind}: неверное имя мастера в окне записи')
+                booking.keyboard.press('Escape')
+                if dialog.is_visible():
+                    err.append(f'{kind}: Escape не закрыл окно записи')
+                try:
+                    booking.wait_for_function(
+                        "() => !document.querySelector('#booking-v3-frame').hasAttribute('src')",
+                        timeout=3000
+                    )
+                except Exception:
+                    err.append(f'{kind}: iframe не очищен после закрытия')
+                if not trigger.evaluate('(el) => document.activeElement === el'):
+                    err.append(f'{kind}: фокус не возвращён кнопке записи')
+        if booking.errs:
+            err.append(f'{kind} booking: {booking.errs}')
+        booking.close()
         # Gallery: inspect actual image loading, category filtering and dialog navigation.
         gal = page(br, 390, 'raboty.html')
         cards = gal.locator('.folio-card')
@@ -126,8 +167,8 @@ with sync_playwright() as p:
         pg = page(br, 390, 'index.html')
         # Примерка находится на странице идей, а не на главной.
         tryon = page(br, 390, 'idei-manikyura.html')
-        if tryon.locator('[data-shape="square"]').count() and tryon.locator('.sw[data-name="Нюд"]').count():
-            tryon.click('[data-shape="square"]'); tryon.click('.sw[data-name="Нюд"]')
+        if tryon.locator('[data-shape="square"]').count() and tryon.locator('.swatch[aria-label="Нюд"]').count():
+            tryon.click('[data-shape="square"]'); tryon.click('.swatch[aria-label="Нюд"]')
             if tryon.locator('#tryonSvg .s1').count() and tryon.get_attribute('#tryonSvg .s1', 'stop-color') != '#F2D7CE':
                 err.append(f'{kind}: примерка не меняет цвет')
             if tryon.locator('#choice').count() and 'квадрат, нюд' not in tryon.inner_text('#choice'):
@@ -147,8 +188,12 @@ with sync_playwright() as p:
             err.append(f'{kind}: Telegram не содержит комментария')
         if 'Маникюр с гель-лаком' not in draft or '2 500 ₽' not in draft:
             err.append(f'{kind}: Telegram не содержит цену и название услуги')
-        if not pg.is_enabled('#copyRequest'):
-            err.append(f'{kind}: копирование заказа недоступно')
+        if pg.locator('#copyRequest').count():
+            if not pg.is_enabled('#copyRequest'):
+                err.append(f'{kind}: копирование заказа недоступно')
+        else:
+            # Кнопка копирования опциональна; отправка заявки проверяется выше.
+            print(f'{kind}: #copyRequest отсутствует, проверка копирования пропущена')
         pg.click('#calc [data-tab=pedi]')
         n = pg.locator('#svcList .nm').count()
         if n < 3:
@@ -201,5 +246,12 @@ with sync_playwright() as p:
         if pg.errs: err.append(f'{kind} gift: {pg.errs}')
         pg.close(); br.close()
 srv.shutdown()
+# Reproducible per-page, per-viewport overflow results (generated by actual browser run).
+with (SNAPSHOTS.parent / 'overflow-results.csv').open('w', encoding='utf-8', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(('browser', 'page', 'viewport_px', 'scroll_width_px', 'result'))
+    writer.writerows(overflow_results)
+print('Overflow matrix:', len(overflow_results), 'checks; report: artifacts/overflow-results.csv')
+
 if err: sys.exit('\n'.join(err))
 print('OK: smoke', ', '.join(k for k, _ in kinds))

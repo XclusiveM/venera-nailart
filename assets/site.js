@@ -143,14 +143,15 @@
     sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
     sheet.addEventListener('close', function () { if (lastFocus && lastFocus.focus) lastFocus.focus(); });
   }
-  function esc(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+  function esc(t) { var d = document.createElement('div'); d.textContent = String(t == null ? '' : t); return d.innerHTML.replace(/\"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function safeHref(url) { try { var u = new URL(url, location.href); return u.protocol === 'https:' || u.protocol === 'http:' ? esc(u.href) : '#'; } catch (e) { return '#'; } }
 
   /* ---------- «Что это?» ---------- */
   function openInfo(name) {
     var d = INFO[name]; if (!d) return; var s = find(name);
     var meta = s ? '<div class="sheet-meta"><span>' + fmt(s.price) + '</span>' + (s.min ? '<span>' + dur(s.min) + '</span>' : '') + '</div>' : '';
     openSheet('<h3 id="sheetTitle">' + esc(name) + '</h3>' + meta + '<h4>Что это</h4><p>' + esc(d.what) + '</p><h4>Откуда пошло</h4><p>' + esc(d.origin) + '</p><h4>Кому подходит</h4><p>' + esc(d.why) + '</p>' +
-      '<div class="actions" style="margin-top:16px"><a class="btn" href="' + CFG.book + '" target="_blank" rel="noopener">Записаться</a><a class="btn btn-line" href="' + tgUrl('Здравствуйте! Хочу записаться: ' + name.toLowerCase() + '.') + '" target="_blank" rel="noopener">Спросить в Telegram</a></div>');
+      '<div class="actions" style="margin-top:16px"><a class="btn" href="' + safeHref(CFG.book) + '" target="_blank" rel="noopener">Записаться</a><a class="btn btn-line" href="' + safeHref(tgUrl('Здравствуйте! Хочу записаться: ' + name.toLowerCase() + '.')) + '" target="_blank" rel="noopener">Спросить в Telegram</a></div>');
     goal('info_open');
   }
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-info]'); if (b) { e.preventDefault(); openInfo(b.dataset.info); } });
@@ -160,7 +161,11 @@
   safe('calc', function () {
     var root = $('#calc'); if (!root) return;
     var list = $('#svcList'), extrasBox = $('#extras'), tab = 'mani';
-    var picks = {}, addons = {}, noteInput, copyButton, statusNode, message = '';
+    var picks = {}, addons = {}, noteInput, copyButton, statusNode, message = '', master = 'venera';
+    var masterSelect=document.createElement('div');masterSelect.className='booking-master-switch';masterSelect.setAttribute('role','group');masterSelect.setAttribute('aria-label','Выбор мастера');
+    var masterLabel=document.createElement('strong');masterLabel.textContent='1. Выберите мастера';masterSelect.append(masterLabel);
+    [['venera','Венера'],['julia','Юлия']].forEach(function(pair){var button=document.createElement('button');button.type='button';button.className='btn btn-line';button.textContent=pair[1];button.dataset.master=pair[0];button.addEventListener('click',function(){master=pair[0];picks={};addons={};tab='mani';render();});masterSelect.append(button);});
+    root.insertBefore(masterSelect,root.firstChild);
     var groups = {
       mani: [{title:'Маникюр',ids:['mani-gel','mani-plain']},{title:'Наращивание и коррекция',ids:['ext','corr-gel','corr-poly']}],
       pedi: [{title:'Педикюр',ids:['smart','pedi-toes','pedi-gel']}],
@@ -170,11 +175,12 @@
     var sectionIntro = {mani:'Выберите один вариант маникюра. Наращивание и коррекция — альтернативы, а не дополнительные услуги.',
       pedi:'Выберите один вариант педикюра: процедуры различаются составом и не суммируются.',
       podo:'Выберите одну основную процедуру для предварительного расчёта. Совмещение обработок и необходимость дополнительных процедур согласовываются с мастером.',
-      men:'Выберите один вариант ухода. Стоимость и продолжительность уточняются у мастера.'};
+      men:'Мужские цены — предварительные рыночные ориентиры, окончательную стоимость подтвердит мастер.'};
     var requested = new URLSearchParams(location.search).get('service');
     var initial = SVC.find(function(s){return s.id === requested;});
-    if (initial) {tab=initial.cat;picks[tab]=initial.id;}
+    if (initial) {master=initial.master||'venera';tab=initial.cat;picks[tab]=initial.id;}
     else {picks.mani='mani-gel';}
+    (CFG.extras||[]).forEach(function(x){if((x.master||'venera')!=='julia')return;var button=document.createElement('button');button.type='button';button.className='extra';button.dataset.extra=x.id;button.setAttribute('aria-pressed','false');button.textContent=x.name+' · '+(x.from?'от ':'')+fmt(x.price);extrasBox.append(button);});
     var banner = document.createElement('div');banner.className='booking-selection booking-selection-v2';banner.setAttribute('role','status');
     var selectionText=document.createElement('strong');
     var reset=document.createElement('button');reset.type='button';reset.className='booking-reset';reset.textContent='Очистить';
@@ -189,8 +195,9 @@
     statusNode=document.createElement('span');statusNode.className='booking-hint';statusNode.setAttribute('role','status');
     wrap.append(label,noteInput,hint,copyButton,statusNode);
     var send=$('#sendReq');send.parentNode.insertBefore(wrap,send);
-    function chosen(){return ['mani','pedi','men','podo'].map(function(cat){return SVC.find(function(s){return s.id===picks[cat];});}).filter(Boolean);}
-    function extras(){return picks.mani==='mani-gel' ? (CFG.extras||[]).filter(function(x){return !!addons[x.id];}) : [];}
+    function available(){return SVC.filter(function(s){return (s.master||'venera')===master;});}
+    function chosen(){return ['mani','pedi','men','podo'].map(function(cat){return available().find(function(s){return s.id===picks[cat];});}).filter(Boolean);}
+    function extras(){return !!picks.mani && (CFG.extras||[]).filter(function(x){return (x.master||'venera')===master && !!addons[x.id];}) || [];}
     function clearConflicts(s){
       if(s.cat==='podo'){delete picks.mani;delete picks.pedi;delete picks.men;addons={};}
       else{
@@ -205,15 +212,17 @@
       }
     }
     function select(s){if(picks[s.cat]===s.id)delete picks[s.cat];else{clearConflicts(s);picks[s.cat]=s.id;}
-      if(picks.mani!=='mani-gel')addons={};render();}
+      if(!picks.mani)addons={};render();}
     function render(){
       list.replaceChildren();help.textContent=sectionIntro[tab];
-      (groups[tab]||[]).forEach(function(g){
+      $('.booking-master-switch button',root).forEach(function(btn){btn.setAttribute('aria-pressed',String(btn.dataset.master===master));});
+      var displayGroups=master==='julia' ? {mani:[{title:'Маникюр, укрепление и наращивание',ids:['julia-mani','julia-gel','julia-hard-gel','julia-hard-poly','julia-ext','julia-remove']}],pedi:[{title:'Педикюр',ids:['julia-toes']}],podo:[],men:[]} : groups;
+      (displayGroups[tab]||[]).forEach(function(g){
         var group=document.createElement('section');group.className='booking-group';
         var head=document.createElement('h3');head.className='booking-group-title';head.textContent=g.title;group.append(head);
         var choices=document.createElement('div');choices.className='booking-group-choices';
         g.ids.forEach(function(id){
-          var s=SVC.find(function(item){return item.id===id;});if(!s)return;
+          var s=available().find(function(item){return item.id===id;});if(!s)return;
           var row=document.createElement('div');row.className='svc svc-compact';row.dataset.selected=String(picks[s.cat]===s.id);
           var btn=document.createElement('button');btn.type='button';btn.className='nm';
           btn.setAttribute('aria-pressed',String(picks[s.cat]===s.id));btn.setAttribute('aria-label',s.name+', '+(s.price==null?'цена по запросу':fmt(s.price)));
@@ -228,7 +237,8 @@
         });
         group.append(choices);list.append(group);
       });
-      var extraVisible=tab==='mani'&&picks.mani==='mani-gel';extrasBox.hidden=!extraVisible;
+      var extraVisible=tab==='mani'&&!!picks.mani;extrasBox.hidden=!extraVisible;
+      $('.extra',root).forEach(function(el){var x=(CFG.extras||[]).find(function(e){return e.id===el.dataset.extra;});el.hidden=!x||(x.master||'venera')!==master;});
       $$('.extra',root).forEach(function(el){el.setAttribute('aria-pressed',String(extraVisible&&!!addons[el.dataset.extra]));});
       $$('.tab',root).forEach(function(el){el.setAttribute('aria-selected',String(el.dataset.tab===tab));});
       recalc();
@@ -238,7 +248,7 @@
       var sv=chosen(),add=extras(),unknown=sv.some(function(x){return x.price==null;});
       var price=sv.reduce(function(v,x){return v+(x.price||0);},0)+add.reduce(function(v,x){return v+x.price;},0);
       var mins=sv.length&&sv.every(function(x){return Number.isFinite(x.min)&&x.min>0;})?sv.reduce(function(v,x){return v+x.min;},0):null;
-      var approx=add.some(function(x){return x.from;});
+      var approx=add.some(function(x){return x.from;})||sv.some(function(x){return x.priceStatus==='market-estimate';});
       var names=sv.map(function(x){return x.name;});
       selectionText.textContent=names.length?'В вашем списке: '+names.join(' + '):'Услуги не выбраны';
       reset.hidden=!names.length;
@@ -251,7 +261,7 @@
       total.textContent=unknown?'Стоимость уточняется':(approx?'от ':'')+fmt(price);
       total.classList.toggle('ask',unknown);
       time.textContent=mins==null?'Время уточняется':'≈ '+dur(mins)+(add.length?' + время дизайна':'');
-      var parts=['Здравствуйте! Хочу записаться на следующие услуги:'];
+      var parts=['Здравствуйте! Хочу записаться к '+(master==='julia'?'Юлии':'Венере')+' на следующие услуги:'];
       sv.forEach(function(x){parts.push('• '+x.name+' — '+(x.price==null?'по запросу':fmt(x.price)));});
       add.forEach(function(x){parts.push('• '+x.name+' — '+(x.from?'от ':'')+fmt(x.price));});
       parts.push('','Предварительная стоимость: '+(unknown?'уточняется':(approx?'от ':'')+fmt(price)));
@@ -265,7 +275,7 @@
     }
     reset.addEventListener('click',function(){picks={};addons={};render();});
     $$('.tab',root).forEach(function(el){el.addEventListener('click',function(){tab=el.dataset.tab;render();});});
-    $$('.extra',root).forEach(function(el){el.addEventListener('click',function(){if(picks.mani!=='mani-gel')return;addons[el.dataset.extra]=!addons[el.dataset.extra];render();});});
+    $$('.extra',root).forEach(function(el){el.addEventListener('click',function(){if(!picks.mani)return;addons[el.dataset.extra]=!addons[el.dataset.extra];render();});});
     ['whenDay','whenTime'].forEach(function(id){$$('#'+id+' .chip').forEach(function(el){el.addEventListener('click',function(){var on=el.getAttribute('aria-pressed')!=='true';$$('#'+id+' .chip').forEach(function(x){x.setAttribute('aria-pressed','false');});el.setAttribute('aria-pressed',String(on));recalc();});});});
     noteInput.addEventListener('input',recalc);document.addEventListener('tryon:change',recalc);
     copyButton.addEventListener('click',function(){if(!message)return;if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(message).then(function(){statusNode.textContent='Список скопирован';}).catch(function(){statusNode.textContent='Не удалось скопировать';});else statusNode.textContent='Скопируйте список через кнопку отправки';});
@@ -400,7 +410,7 @@
     var who = 'her', idx = 0;
     function item() { return G[who][idx]; }
     function opts() {
-      var box = $('#giftOpts'); box.innerHTML = '';
+      var box = $('#giftOpts'); box.replaceChildren();
       G[who].forEach(function (g, i) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'opt'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(i === idx));
         var t = document.createElement('b'); t.textContent = g[0]; var s = document.createElement('small'); s.textContent = g[2] ? 'на любые услуги' : (g[1] == null ? 'стоимость уточнит мастер' : fmt(g[1]));
