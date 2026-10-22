@@ -61,9 +61,15 @@ with sync_playwright() as p:
                         err.append(f'{kind} {w}: огромная схема стопы всё ещё видна')
                     if pg.locator('.tryon .hand-stage:not([hidden])').count() != 0:
                         err.append(f'{kind} {w}: мультяшная рука всё ещё видна')
+                    # Both specialist profiles must be reachable and modal triggers must match.
                     for profile in ('188382', '463374'):
-                        if not pg.locator(f'.specialist-card a[href="https://bumpix.net/{profile}"]').count():
-                            err.append(f'{kind} {w}: отсутствует ссылка Bumpix {profile}')
+                        url = f'https://bumpix.net/{profile}'
+                        if pg.locator(f'#specialists .booking-v3-card a[href="{url}"][target="_blank"]').count() != 1:
+                            err.append(f'{kind} {w}: отсутствует основная ссылка Bumpix {profile}')
+                        if pg.locator(f'#specialists button[data-booking-open="{url}"]').count() != 1:
+                            err.append(f'{kind} {w}: отсутствует встроенная запись Bumpix {profile}')
+                    if pg.locator('#booking-v3-dialog').count() != 1:
+                        err.append(f'{kind} {w}: отсутствует диалог онлайн-записи')
                     if pg.locator('[data-remind]').count():
                         err.append(f'{kind} {w}: осталось выдуманное календарное напоминание')
                 if (path == 'index.html' and w in (390, 1440)) or (path == 'muzhskoj-manikyur.html' and w == 390):
@@ -73,6 +79,32 @@ with sync_playwright() as p:
                         pg.locator(f'#{section}').scroll_into_view_if_needed()
                         pg.screenshot(path=str(SNAPSHOTS / f'{kind}-{section}-390.png'), full_page=False)
                 pg.close()
+        # Booking modal: check both masters, external fallback, Escape and focus restoration.
+        booking = page(br, 390, 'index.html')
+        for profile, master in (('188382', 'Венера'), ('463374', 'Юлия')):
+            trigger = booking.locator(f'button[data-booking-open="https://bumpix.net/{profile}"]')
+            trigger.scroll_into_view_if_needed()
+            trigger.click()
+            dialog = booking.locator('#booking-v3-dialog')
+            if not dialog.is_visible():
+                err.append(f'{kind}: окно записи {master} не открылось')
+            else:
+                if booking.locator('#booking-v3-external').get_attribute('href') != f'https://bumpix.net/{profile}':
+                    err.append(f'{kind}: неверная внешняя ссылка записи {master}')
+                if booking.locator('#booking-v3-frame').get_attribute('src') != f'https://bumpix.net/{profile}':
+                    err.append(f'{kind}: неверный адрес iframe {master}')
+                if master not in booking.locator('#booking-v3-master').inner_text():
+                    err.append(f'{kind}: неверное имя мастера в окне записи')
+                booking.keyboard.press('Escape')
+                if dialog.is_visible():
+                    err.append(f'{kind}: Escape не закрыл окно записи')
+                if booking.locator('#booking-v3-frame').get_attribute('src'):
+                    err.append(f'{kind}: iframe не очищен после закрытия')
+                if not trigger.evaluate('(el) => document.activeElement === el'):
+                    err.append(f'{kind}: фокус не возвращён кнопке записи')
+        if booking.errs:
+            err.append(f'{kind} booking: {booking.errs}')
+        booking.close()
         # Gallery: inspect actual image loading, category filtering and dialog navigation.
         gal = page(br, 390, 'raboty.html')
         cards = gal.locator('.folio-card')
