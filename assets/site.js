@@ -38,6 +38,34 @@
   } catch (error) {
     if (window.console) console.warn('[catalog] Встроенный прайс используется как резервный', error);
   }
+  /* Обновляем существующие таблицы прайса из единого каталога, не используя innerHTML
+     с пользовательскими данными. Скрытые услуги убираем из таблиц. */
+  function syncPriceTables() {
+    var byName = {};
+    (CFG.services || []).forEach(function (item) { byName[item.name] = item; });
+    document.querySelectorAll('table.prices tr:not(.cat)').forEach(function (row) {
+      var cells = row.querySelectorAll('td');
+      if (cells.length !== 2) return;
+      var info = cells[0].querySelector('[data-info]');
+      var raw = info ? info.getAttribute('data-info') : '';
+      if (!raw) {
+        var clone = cells[0].cloneNode(true);
+        clone.querySelectorAll('small,button').forEach(function (n) { n.remove(); });
+        raw = clone.textContent.trim();
+      }
+      var item = byName[raw];
+      if (!item) return;
+      if (item.status && item.status !== 'published') { row.hidden = true; return; }
+      cells[1].textContent = item.price === null ? 'По запросу' : new Intl.NumberFormat('ru-RU').format(item.price) + ' ₽';
+      var small = cells[0].querySelector('small');
+      if (small) {
+        var minutes = item.min;
+        var duration = minutes ? (minutes >= 60 ? Math.floor(minutes / 60) + ' ч' + (minutes % 60 ? ' ' + minutes % 60 + ' мин' : '') : minutes + ' мин') : '';
+        small.textContent = [duration, item.note].filter(Boolean).join(' · ');
+      }
+    });
+  }
+  syncPriceTables();
   var SVC = CFG.services || [];
   function fmt(n) { return n == null ? 'по запросу' : new Intl.NumberFormat('ru-RU').format(n) + ' ₽'; }
   function dur(m) { if (!m) return ''; var h = Math.floor(m / 60), mm = m % 60; return h && mm ? h + ' ч ' + mm + ' мин' : h ? h + ' ч' : mm + ' мин'; }
