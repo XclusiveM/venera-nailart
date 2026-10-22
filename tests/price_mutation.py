@@ -19,7 +19,7 @@ try:
     print("EXIT CODE:", result.returncode)
     print("STDOUT:\n" + result.stdout)
     print("STDERR:\n" + result.stderr)
-    has_location = any(__import__("re").search(r"\\.html:\\d+:", line) for line in result.stderr.splitlines())
+    has_location = any(".html:" in line and line.split(".html:", 1)[1].split(":", 1)[0].isdigit() for line in result.stderr.splitlines())
     if result.returncode == 0 or not has_location:
         raise SystemExit("FAIL: missing line-numbered stale price diagnostic")
     print("PASS: changed price detected with file and line")
