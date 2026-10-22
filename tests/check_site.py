@@ -50,7 +50,7 @@ for name in PAGES:
         try: json.loads(j)
         except Exception as e: err.append(f'{name}: JSON-LD не парсится: {e}')
     if not p.ld and name not in ('politika.html', 'soglasie.html'): err.append(f'{name}: нет JSON-LD')
-r = subprocess.run([sys.executable, str(ROOT / 'src' / 'build.py'), '--check'], capture_output=True, text=True)
+r = subprocess.run([sys.executable, str(ROOT / 'scripts' / 'sync_catalog.py'), '--check'], capture_output=True, text=True)
 if r.returncode: err.append(r.stderr.strip() or r.stdout.strip())
 if err: sys.exit('\n'.join(err))
 print(f'OK: {len(PAGES)} страниц проверено')
