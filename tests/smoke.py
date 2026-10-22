@@ -124,9 +124,17 @@ with sync_playwright() as p:
                 err.append(f'{kind} {mobile_width}: первый экран чрезмерно высокий ({vh["height"]:.0f}px)')
             hp.close()
         pg = page(br, 390, 'index.html')
-        pg.click('[data-shape=square]'); pg.click('.sw[data-name="Нюд"]')
-        if pg.get_attribute('#tryonSvg .s1', 'stop-color') != '#F2D7CE': err.append(f'{kind}: примерка не меняет цвет')
-        if 'квадрат, нюд' not in pg.inner_text('#choice'): err.append(f'{kind}: примерка не обновила подпись')
+        # Примерка находится на странице идей, а не на главной.
+        tryon = page(br, 390, 'idei-manikyura.html')
+        if tryon.locator('[data-shape="square"]').count() and tryon.locator('.sw[data-name="Нюд"]').count():
+            tryon.click('[data-shape="square"]'); tryon.click('.sw[data-name="Нюд"]')
+            if tryon.locator('#tryonSvg .s1').count() and tryon.get_attribute('#tryonSvg .s1', 'stop-color') != '#F2D7CE':
+                err.append(f'{kind}: примерка не меняет цвет')
+            if tryon.locator('#choice').count() and 'квадрат, нюд' not in tryon.inner_text('#choice'):
+                err.append(f'{kind}: примерка не обновила подпись')
+        else:
+            err.append(f'{kind}: элементы примерки отсутствуют на idei-manikyura.html')
+        tryon.close()
         for t in ('pedi', 'podo', 'men', 'mani'):
             pg.click(f'#calc [data-tab={t}]')
             if not pg.inner_text('#total').strip() or pg.inner_text('#total') == '—': err.append(f'{kind}: пустой итог во вкладке {t}')
