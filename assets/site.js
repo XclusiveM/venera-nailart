@@ -6,6 +6,7 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   function json(id) { try { return JSON.parse($('#' + id).textContent); } catch (e) { return {}; } }
   var CFG = json('site-data'), INFO = json('info-data');
+  var ORIGINAL_SERVICES = (CFG.services || []).slice();
   /* Единый каталог услуг: при сетевой ошибке сохраняем прежний встроенный прайс.
      Важно: статические текстовые цены на страницах пока не синхронизированы. */
   try {
@@ -41,8 +42,9 @@
   /* Обновляем существующие таблицы прайса из единого каталога, не используя innerHTML
      с пользовательскими данными. Скрытые услуги убираем из таблиц. */
   function syncPriceTables() {
-    var byName = {};
-    (CFG.services || []).forEach(function (item) { byName[item.name] = item; });
+    var byName = {}, byId = {};
+    (CFG.services || []).forEach(function (item) { byId[item.id] = item; byName[item.name] = item; });
+    ORIGINAL_SERVICES.forEach(function (item) { if (byId[item.id]) byName[item.name] = byId[item.id]; });
     document.querySelectorAll('table.prices tr:not(.cat)').forEach(function (row) {
       var cells = row.querySelectorAll('td');
       if (cells.length !== 2) return;
@@ -56,6 +58,9 @@
       var item = byName[raw];
       if (!item) return;
       if (item.status && item.status !== 'published') { row.hidden = true; return; }
+      if (info) info.setAttribute('data-info', item.name);
+      var titleNode = cells[0].firstChild;
+      if (titleNode && titleNode.nodeType === 3) titleNode.textContent = item.name + ' ';
       cells[1].textContent = item.price === null ? 'По запросу' : new Intl.NumberFormat('ru-RU').format(item.price) + ' ₽';
       var small = cells[0].querySelector('small');
       if (small) {
