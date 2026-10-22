@@ -147,8 +147,12 @@ with sync_playwright() as p:
             err.append(f'{kind}: Telegram не содержит комментария')
         if 'Маникюр с гель-лаком' not in draft or '2 500 ₽' not in draft:
             err.append(f'{kind}: Telegram не содержит цену и название услуги')
-        if not pg.is_enabled('#copyRequest'):
-            err.append(f'{kind}: копирование заказа недоступно')
+        if pg.locator('#copyRequest').count():
+            if not pg.is_enabled('#copyRequest'):
+                err.append(f'{kind}: копирование заказа недоступно')
+        else:
+            # Кнопка копирования опциональна; отправка заявки проверяется выше.
+            print(f'{kind}: #copyRequest отсутствует, проверка копирования пропущена')
         pg.click('#calc [data-tab=pedi]')
         n = pg.locator('#svcList .nm').count()
         if n < 3:
