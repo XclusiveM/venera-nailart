@@ -128,8 +128,8 @@ with sync_playwright() as p:
         pg = page(br, 390, 'index.html')
         # Примерка находится на странице идей, а не на главной.
         tryon = page(br, 390, 'idei-manikyura.html')
-        if tryon.locator('[data-shape="square"]').count() and tryon.locator('.sw[data-name="Нюд"]').count():
-            tryon.click('[data-shape="square"]'); tryon.click('.sw[data-name="Нюд"]')
+        if tryon.locator('[data-shape="square"]').count() and tryon.locator('.swatch[aria-label="Нюд"]').count():
+            tryon.click('[data-shape="square"]'); tryon.click('.swatch[aria-label="Нюд"]')
             if tryon.locator('#tryonSvg .s1').count() and tryon.get_attribute('#tryonSvg .s1', 'stop-color') != '#F2D7CE':
                 err.append(f'{kind}: примерка не меняет цвет')
             if tryon.locator('#choice').count() and 'квадрат, нюд' not in tryon.inner_text('#choice'):
