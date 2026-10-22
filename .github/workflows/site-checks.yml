@@ -29,3 +29,11 @@ jobs:
           name: browser-screenshots
           path: artifacts/screenshots/
           if-no-files-found: warn
+
+      - name: Upload responsive overflow matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-overflow-results
+          path: artifacts/overflow-results.csv
+          if-no-files-found: warn
