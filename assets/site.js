@@ -165,12 +165,13 @@
   var tryonState = { shape: 'миндаль', shade: 'вишня', touched: false };
   safe('calc', function () {
     var root = $('#calc'); if (!root) return;
+    var mensManicurePage = root.dataset.mensManicure === 'true';
     var list = $('#svcList'), extrasBox = $('#extras'), tab = 'mani';
     var picks = {}, addons = {}, noteInput, copyButton, statusNode, message = '', master = 'venera';
     var masterSelect=document.createElement('div');masterSelect.className='booking-master-switch';masterSelect.setAttribute('role','group');masterSelect.setAttribute('aria-label','Выбор мастера');
     var masterLabel=document.createElement('strong');masterLabel.textContent='1. Выберите мастера';masterSelect.append(masterLabel);
     [['venera','Венера'],['julia','Юлия']].forEach(function(pair){var button=document.createElement('button');button.type='button';button.className='btn btn-line';button.textContent=pair[1];button.dataset.master=pair[0];button.addEventListener('click',function(){master=pair[0];picks={};addons={};tab='mani';render();});masterSelect.append(button);});
-    list.parentNode.insertBefore(masterSelect,list.parentNode.firstChild);
+    if (!mensManicurePage) list.parentNode.insertBefore(masterSelect,list.parentNode.firstChild);
     var groups = {
       mani: [{title:'Маникюр',ids:['mani-gel','mani-plain']},{title:'Наращивание и коррекция',ids:['ext','corr-gel','corr-poly']}],
       pedi: [{title:'Педикюр',ids:['smart','pedi-toes','pedi-gel']}],
@@ -182,8 +183,9 @@
       podo:'Выберите одну основную процедуру для предварительного расчёта. Совмещение обработок и необходимость дополнительных процедур согласовываются с мастером.',
       men:'Мужские услуги записывает Венера в Telegram. Выберите уход и добавьте пожелания; цену и длительность она подтвердит в переписке.'};
     var requested = new URLSearchParams(location.search).get('service');
-    var initial = SVC.find(function(s){return s.id === requested;});
+    var initial = SVC.find(function(s){return s.id === requested && (!mensManicurePage || s.id === 'men-mani');});
     if (initial) {master=initial.master||'venera';tab=initial.cat;picks[tab]=initial.id;}
+    else if (mensManicurePage) {tab='men';picks.men='men-mani';}
     else {picks.mani='mani-gel';}
     extrasBox.replaceChildren();
     (CFG.extras||[]).forEach(function(x){var button=document.createElement('button');button.type='button';button.className='extra';button.dataset.extra=x.id;button.setAttribute('aria-pressed','false');button.textContent=x.name+' · '+(x.from?'от ':'')+fmt(x.price);extrasBox.append(button);});
@@ -211,13 +213,13 @@
     privateHelp.textContent='Доплата по максимальной стоимости записей, которые перекрывает визит. Услуга, пересекающая его окончание, учитывается целиком. Расписание не синхронизируется; дату и отсутствие других клиентов подтверждает Венера.';
     var privatePrice=document.createElement('p');privatePrice.id='privateVisitPrice';privatePrice.className='booking-private-price';
     privatePrice.setAttribute('role','status');privateBox.append(privateLabel,privateHelp,privatePrice);
-    list.parentNode.append(privateBox);
+    if (mensManicurePage) list.parentNode.append(privateBox);
     var bookingLink=$('.summary > a.btn:not(#sendReq)',root);
     var preview=document.createElement('details');preview.className='booking-preview';
     var previewLabel=document.createElement('summary');previewLabel.textContent='Посмотреть текст заявки';
     var previewText=document.createElement('pre');previewText.id='requestPreview';preview.append(previewLabel,previewText);
     send.parentNode.insertBefore(preview,send);
-    function available(){return SVC.filter(function(s){return (s.master||'venera')===master;});}
+    function available(){return SVC.filter(function(s){return (s.master||'venera')===master && (!mensManicurePage || s.id==='men-mani');});}
     function chosen(){return ['mani','pedi','men','podo'].map(function(cat){return available().find(function(s){return s.id===picks[cat];});}).filter(Boolean);}
     function canAddExtras(){return ['mani-gel','julia-gel','julia-hard-gel','julia-hard-poly','julia-ext'].indexOf(picks.mani)>=0;}
     function extras(){return canAddExtras() ? (CFG.extras||[]).filter(function(x){return (x.master||'venera')===master && !!addons[x.id];}) : [];}
@@ -274,8 +276,11 @@
       var mins=sv.length&&timed.every(function(x){return Number.isInteger(x.min)&&x.min>0;})?timed.reduce(function(v,x){return v+x.min;},0):null;
       var fromPrice=add.some(function(x){return x.from;});
       var approx=sv.some(function(x){return !!x.priceStatus;});
+      var privateAllowed=mensManicurePage&&picks.men==='men-mani';
+      privateBox.hidden=!privateAllowed;
+      if(!privateAllowed)privateInput.checked=false;
       var privateQuote=null;
-      if(!unknown&&mins!=null&&window.BookingPricing){
+      if(privateAllowed&&!unknown&&mins!=null&&window.BookingPricing){
         privateQuote=window.BookingPricing.individualVisit(SVC,CFG.individualVisit,master,price,mins);
       }
       privatePrice.textContent=!sv.length?'Выберите услуги для расчёта доплаты':privateQuote ? 'Доплата: '+fmt(privateQuote.surcharge)+' за '+dur(mins) : 'Доплата по запросу: нужны полные цены и длительности всех выбранных услуг';

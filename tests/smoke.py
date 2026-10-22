@@ -49,6 +49,8 @@ with sync_playwright() as p:
                 if sw > w:
                     offenders = pg.evaluate('''() => [...document.querySelectorAll('body *')].map(e => ({tag:e.tagName.toLowerCase(), cls:typeof e.className==='string'?e.className.slice(0,65):'', right:Math.round(e.getBoundingClientRect().right), width:Math.round(e.getBoundingClientRect().width)})).filter(e => e.right > innerWidth + 2).sort((a,b)=>b.right-a.right).slice(0,8)''')
                     err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}; offenders={offenders}')
+                if path != 'muzhskoj-manikyur.html' and pg.locator('#privateVisit').count():
+                    err.append(f'{kind} {w} {path}: индивидуальный визит вне мужской страницы')
                 if pg.errs: err.append(f'{kind} {w} {path}: {pg.errs}')
                 if path == 'index.html':
                     if pg.locator('#works .folio-card').count() != 8:
@@ -223,20 +225,8 @@ with sync_playwright() as p:
         if pg.locator('#sheet .actions a.btn').first.get_attribute('href') != 'https://bumpix.net/463374':
             err.append(f'{kind}: окно услуги Юлии отправляет к другому мастеру')
         pg.keyboard.press('Escape')
-        pg.locator('#privateVisit').check()
-        if 'Индивидуальный визит' not in pg.inner_text('#lines') or pg.locator('#calc .summary > a.btn:not(#sendReq)').is_visible():
-            err.append(f'{kind}: приватный визит отправляется в обычную онлайн-запись')
-        pg.locator('#privateVisit').scroll_into_view_if_needed()
-        pg.screenshot(path=str(SNAPSHOTS / f'{kind}-private-visit-390.png'), full_page=False)
-        before = spaces(unquote(pg.get_attribute('#sendReq', 'href') or ''))
-        if 'Доплата:' not in before or 'Юлии' not in before or 'без других клиентов' not in before:
-            err.append(f'{kind}: приватная заявка потеряла условия')
-        pg.locator('.booking-preview summary').click()
-        if pg.inner_text('#requestPreview') not in unquote(pg.get_attribute('#sendReq', 'href') or ''):
-            err.append(f'{kind}: предпросмотр заявки не совпадает с Telegram')
-        pg.locator('.booking-reset').click()
-        if pg.locator('#privateVisit').is_checked() or pg.get_attribute('#sendReq', 'aria-disabled') != 'true':
-            err.append(f'{kind}: очистка оставила приватный визит или активную заявку')
+        if pg.locator('#privateVisit').count():
+            err.append(f'{kind}: индивидуальный визит появился в общем калькуляторе')
         pg.locator('[data-master="venera"]').click()
         pg.locator('#svcList .nm').filter(has_text='Маникюр без покрытия').click()
         if pg.locator('#extras').is_visible():
@@ -257,12 +247,33 @@ with sync_playwright() as p:
             err.append(f'{kind}: неутверждённая мужская цена показана как окончательная')
         if pg.locator('#calc .summary > a.btn:not(#sendReq)').is_visible():
             err.append(f'{kind}: мужская запись ведёт в Bumpix')
+        if pg.locator('#privateVisit').count():
+            err.append(f'{kind}: мужская услуга на главной открыла индивидуальный визит')
+        pg.close()
+        # Private visit exists only on the separate men's manicure page.
+        pg = page(br, 390, 'muzhskoj-manikyur.html#calc')
+        if pg.locator('#svcList .nm').count() != 1 or 'Мужской маникюр' not in pg.inner_text('#lines'):
+            err.append(f'{kind}: отдельный калькулятор показывает не мужской маникюр')
         pg.locator('#privateVisit').check()
         if 'Стоимость уточняется' not in pg.inner_text('#total') or 'по запросу' not in pg.inner_text('#privateVisitPrice'):
             err.append(f'{kind}: неизвестная длительность дала выдуманный приватный тариф')
-        if 't.me/Venera_Ni' not in (pg.get_attribute('#sendReq', 'href') or ''):
-            err.append(f'{kind}: мужская заявка отправляется не Венере')
-        if pg.errs: err.append(f'{kind} male deep link: {pg.errs}')
+        if pg.locator('#calc .summary > a.btn:not(#sendReq)').is_visible():
+            err.append(f'{kind}: индивидуальный визит отправляется в обычную онлайн-запись')
+        before = unquote(pg.get_attribute('#sendReq', 'href') or '')
+        if 't.me/Venera_Ni' not in before or 'без других клиентов' not in before or 'Доплата:' not in before:
+            err.append(f'{kind}: мужская индивидуальная заявка потеряла условия')
+        pg.locator('.booking-preview summary').click()
+        if pg.inner_text('#requestPreview') not in before:
+            err.append(f'{kind}: предпросмотр заявки не совпадает с Telegram')
+        pg.locator('#privateVisit').scroll_into_view_if_needed()
+        pg.screenshot(path=str(SNAPSHOTS / f'{kind}-private-visit-390.png'), full_page=False)
+        pg.locator('#privateVisit').uncheck()
+        if 'без других клиентов' in unquote(pg.get_attribute('#sendReq', 'href') or ''):
+            err.append(f'{kind}: обычный мужской визит сохранил приватные условия')
+        pg.locator('.booking-reset').click()
+        if pg.locator('#privateVisit').is_checked() or pg.get_attribute('#sendReq', 'aria-disabled') != 'true':
+            err.append(f'{kind}: очистка оставила приватный визит или активную заявку')
+        if pg.errs: err.append(f'{kind} mens private: {pg.errs}')
         pg.close()
         # Embedded full catalog must work when the live JSON is unavailable.
         fallback = br.new_page(viewport={'width': 390, 'height': 844})
