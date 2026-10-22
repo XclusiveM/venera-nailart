@@ -7,6 +7,7 @@
   function json(id) { try { return JSON.parse($('#' + id).textContent); } catch (e) { return {}; } }
   var CFG = json('site-data'), INFO = json('info-data');
   var ORIGINAL_SERVICES = (CFG.services || []).slice();
+  var catalogLoaded = false;
   /* Единый каталог услуг: при сетевой ошибке сохраняем прежний встроенный прайс.
      Важно: статические текстовые цены на страницах пока не синхронизированы. */
   try {
@@ -29,6 +30,7 @@
       }
       seenIds[item.id] = true;
     });
+    catalogLoaded = true;
     CFG.services = catalog.services.filter(function (item) {
       return !item.status || item.status === 'published';
     });
@@ -44,7 +46,11 @@
   function syncPriceTables() {
     var byName = {}, byId = {};
     (CFG.services || []).forEach(function (item) { byId[item.id] = item; byName[item.name] = item; });
-    ORIGINAL_SERVICES.forEach(function (item) { if (byId[item.id]) byName[item.name] = byId[item.id]; });
+    var originalByName = {};
+    ORIGINAL_SERVICES.forEach(function (item) {
+      originalByName[item.name] = item;
+      if (byId[item.id]) byName[item.name] = byId[item.id];
+    });
     document.querySelectorAll('table.prices tr:not(.cat)').forEach(function (row) {
       var cells = row.querySelectorAll('td');
       if (cells.length !== 2) return;
@@ -56,6 +62,7 @@
         raw = clone.textContent.trim();
       }
       var item = byName[raw];
+      if (!item && catalogLoaded && originalByName[raw]) { row.hidden = true; return; }
       if (!item) return;
       if (item.status && item.status !== 'published') { row.hidden = true; return; }
       if (info) info.setAttribute('data-info', item.name);
@@ -75,7 +82,15 @@
   function fmt(n) { return n == null ? 'по запросу' : new Intl.NumberFormat('ru-RU').format(n) + ' ₽'; }
   function dur(m) { if (!m) return ''; var h = Math.floor(m / 60), mm = m % 60; return h && mm ? h + ' ч ' + mm + ' мин' : h ? h + ' ч' : mm + ' мин'; }
   function tgUrl(text) { return 'https://t.me/' + CFG.tg + '?text=' + encodeURIComponent(text); }
-  function find(name) { for (var i = 0; i < SVC.length; i++) if (SVC[i].name === name) return SVC[i]; return null; }
+  function find(name) {
+    for (var i = 0; i < SVC.length; i++) if (SVC[i].name === name) return SVC[i];
+    for (var j = 0; j < ORIGINAL_SERVICES.length; j++) {
+      if (ORIGINAL_SERVICES[j].name === name) {
+        for (var k = 0; k < SVC.length; k++) if (SVC[k].id === ORIGINAL_SERVICES[j].id) return SVC[k];
+      }
+    }
+    return null;
+  }
   function safe(name, fn) { try { fn(); } catch (e) { if (window.console) console.error('[' + name + ']', e); } }
 
   var toastT;
