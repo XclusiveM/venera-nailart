@@ -15,6 +15,8 @@ jobs:
           node-version: '22'
       - name: Static checks and build freshness
         run: python tests/check_site.py
+      - name: Catalog price mutation regression
+        run: python3 tests/price_mutation.py
       - name: JS syntax
         run: node --check assets/site.js
       - name: Browser smoke test (Chromium + WebKit)
@@ -30,6 +32,10 @@ jobs:
           path: artifacts/screenshots/
           if-no-files-found: warn
 
+      - name: Show first ten overflow CSV rows
+        if: always()
+        run: |
+          if test -f artifacts/overflow-results.csv; then head -n 10 artifacts/overflow-results.csv; else echo 'overflow CSV missing'; fi
       - name: Upload responsive overflow matrix
         if: always()
         uses: actions/upload-artifact@v4
