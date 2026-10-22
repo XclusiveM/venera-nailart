@@ -1,11 +1,43 @@
 /* Венера, ногтевая студия — все интерактивные модули.
    Каждый модуль сам проверяет, есть ли его разметка на странице, и молча выходит, если нет. */
-(function () {
+(async function () {
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   function json(id) { try { return JSON.parse($('#' + id).textContent); } catch (e) { return {}; } }
   var CFG = json('site-data'), INFO = json('info-data');
+  /* Единый каталог услуг: при сетевой ошибке сохраняем прежний встроенный прайс.
+     Важно: статические текстовые цены на страницах пока не синхронизированы. */
+  try {
+    var response = await fetch('data/services.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    var catalog = await response.json();
+    if (catalog.schemaVersion !== 1 || !Array.isArray(catalog.services) ||
+        !Array.isArray(catalog.categories) || !Array.isArray(catalog.extras)) {
+      throw new Error('Некорректная структура каталога');
+    }
+    var categoryIds = catalog.categories.map(function (c) { return c.id; });
+    var seenIds = {};
+    catalog.services.forEach(function (item) {
+      if (!item || typeof item.id !== 'string' || seenIds[item.id] ||
+          typeof item.name !== 'string' || !item.name.trim() ||
+          categoryIds.indexOf(item.cat) < 0 ||
+          (item.price !== null && (!Number.isInteger(item.price) || item.price < 0)) ||
+          (item.min !== null && (!Number.isInteger(item.min) || item.min < 1))) {
+        throw new Error('Ошибка данных услуги');
+      }
+      seenIds[item.id] = true;
+    });
+    CFG.services = catalog.services.filter(function (item) {
+      return !item.status || item.status === 'published';
+    });
+    CFG.extras = catalog.extras.filter(function (item) {
+      return !item.status || item.status === 'published';
+    });
+    CFG.cats = catalog.categories;
+  } catch (error) {
+    if (window.console) console.warn('[catalog] Встроенный прайс используется как резервный', error);
+  }
   var SVC = CFG.services || [];
   function fmt(n) { return n == null ? 'по запросу' : new Intl.NumberFormat('ru-RU').format(n) + ' ₽'; }
   function dur(m) { if (!m) return ''; var h = Math.floor(m / 60), mm = m % 60; return h && mm ? h + ' ч ' + mm + ' мин' : h ? h + ' ч' : mm + ' мин'; }
