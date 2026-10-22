@@ -644,3 +644,21 @@ body.folio-open{overflow:hidden;overscroll-behavior:none}
  #calc .extras{gap:7px}
  #calc .extra{font-size:13px;padding:8px 11px}
 }
+
+/* Audit: clear selection, comfortable controls and an editorial first screen. */
+.svc[data-selected="true"] .dot{border-color:var(--cherry);background:var(--cherry);box-shadow:inset 0 0 0 4px #fff}
+.info-btn{width:44px;height:44px;min-width:44px}
+.booking-private input{margin-top:4px}
+.price-source-note{font-size:13px;line-height:1.6;color:var(--muted);padding-top:0;padding-bottom:14px;margin:0 auto}
+.home-hero .hero-photo{display:block;position:relative;min-width:0;overflow:hidden;border-radius:110px 18px 18px 18px;aspect-ratio:4/4.6;color:#fff;box-shadow:0 20px 50px #51323b17}
+.hero-photo img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
+.hero-photo:hover img{transform:scale(1.025)}
+.hero-photo>span{position:absolute;inset:auto 0 0;padding:50px 24px 24px;background:linear-gradient(transparent,#29131cbb);display:grid;gap:6px}
+.hero-photo small{font-size:11px;text-transform:uppercase;letter-spacing:.14em}
+.hero-photo b{font:24px/1.2 var(--serif);padding-right:25px}
+.hero-photo i{position:absolute;right:24px;bottom:24px;font-size:26px;font-style:normal}
+@media(min-width:900px){.home-hero .hero-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.8fr);gap:48px}.home-hero h1{font-size:clamp(36px,3.7vw,54px)}}
+@media(max-width:899px){.home-hero .hero-photo{max-height:350px;aspect-ratio:1.6;border-radius:70px 16px 16px 16px}.home-hero .hero-grid{display:grid;grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.hero-photo img{transition:none}}
+
+.quick-prices strong [data-price-id]{font:inherit;color:inherit}

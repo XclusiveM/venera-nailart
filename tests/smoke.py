@@ -10,7 +10,7 @@ def spaces(value):
     return value.replace(chr(160), ' ').replace(chr(8239), ' ')
 from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
-PAGES = sorted(p.name for p in ROOT.glob('*.html'))
+PAGES = sorted(p.name for p in ROOT.glob('*.html')) + sorted(str(p.relative_to(ROOT)) for p in (ROOT / 'admin-preview').glob('*.html'))
 SNAPSHOTS = ROOT / 'artifacts' / 'screenshots'
 SNAPSHOTS.mkdir(parents=True, exist_ok=True)
 class H(http.server.SimpleHTTPRequestHandler):
@@ -211,6 +211,58 @@ with sync_playwright() as p:
                 if pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не закрылось')
         if pg.errs: err.append(f'{kind} interactions: {pg.errs}')
         pg.close()
+        # Customer navigation, keyboard access and the editorial homepage.
+        nav = page(br, 390, 'index.html')
+        nav.locator('.menu-btn').click()
+        if nav.locator('#menu').get_attribute('hidden') is not None:
+            err.append(f'{kind}: меню не открылось')
+        nav.keyboard.press('Escape')
+        if nav.locator('.menu-btn').get_attribute('aria-expanded') != 'false':
+            err.append(f'{kind}: Escape не закрыл меню')
+        nav.locator('#calc [data-tab="mani"]').focus()
+        nav.keyboard.press('ArrowRight')
+        if nav.locator('#calc [data-tab="pedi"]').get_attribute('aria-selected') != 'true':
+            err.append(f'{kind}: клавиатурный переход вкладок не работает')
+        if nav.locator('#services h2').count() != 1:
+            err.append(f'{kind}: заголовок услуг повреждён')
+        if not nav.locator('.hero-photo img').evaluate('(im) => im.complete && im.naturalWidth > 0'):
+            err.append(f'{kind}: фото первого экрана не загрузилось')
+        if nav.errs: err.append(f'{kind} navigation: {nav.errs}')
+        nav.close()
+        # The recommendation page must change the actual recommendation.
+        studio = page(br, 390, 'nail-studio.html')
+        studio.get_by_text('Ярко и смело', exact=True).click()
+        if 'Смелый образ' not in studio.locator('#advisorTitle').inner_text():
+            err.append(f'{kind}: подбор образа не обновляет результат')
+        studio.locator('.palette-tile[data-name="Вишня"]').click()
+        if 'Вишня' not in studio.locator('#pickedLabel').inner_text():
+            err.append(f'{kind}: подборка оттенков не сохраняет выбор')
+        studio.locator('.palette-tile[data-name="Вишня"]').click()
+        if 'Вишня' in studio.locator('#pickedLabel').inner_text():
+            err.append(f'{kind}: оттенок нельзя удалить из подборки')
+        if studio.errs: err.append(f'{kind} studio: {studio.errs}')
+        studio.close()
+        # Public demo editors are usable but never publish changes.
+        settings = page(br, 390, 'admin-preview/marketing.html')
+        if not settings.locator('#title').input_value():
+            err.append(f'{kind}: настройки продвижения не загрузились')
+        settings.locator('#title').fill('Проверка локального черновика')
+        settings.locator('#title').press('Tab')
+        if 'сохранён' not in settings.locator('#message').inner_text():
+            err.append(f'{kind}: черновик продвижения не сохраняется')
+        settings.reload()
+        if settings.locator('#title').input_value() != 'Проверка локального черновика':
+            err.append(f'{kind}: черновик продвижения потерян после обновления')
+        if settings.errs: err.append(f'{kind} marketing: {settings.errs}')
+        settings.close()
+        editor = page(br, 390, 'admin-preview/index.html')
+        editor.locator('#search').fill('Маникюр с гель-лаком')
+        if editor.locator('#list article').count() != 2:
+            err.append(f'{kind}: редактор не разделяет одноимённые услуги мастеров')
+        if editor.get_by_text('Мастер: Юлия', exact=True).count() != 1:
+            err.append(f'{kind}: редактор не показывает мастера услуги')
+        if editor.errs: err.append(f'{kind} catalog editor: {editor.errs}')
+        editor.close()
         # Master switch, separate catalogs, exact service info and private quote.
         pg = page(br, 390, 'index.html')
         pg.locator('[data-master="julia"]').click()

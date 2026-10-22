@@ -16,7 +16,9 @@ jobs:
       - name: Static checks and build freshness
         run: python tests/check_site.py
       - name: Catalog price mutation regression
-        run: python3 tests/price_mutation.py
+        run: |
+          python3 tests/price_mutation.py
+          python3 tests/catalog_copy.py
       - name: JS syntax
         run: |
           node --check assets/site.js

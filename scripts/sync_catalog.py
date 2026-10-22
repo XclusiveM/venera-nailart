@@ -9,6 +9,7 @@ import json
 import pathlib
 import re
 import sys
+from catalog_copy import render_copy
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "services.json"
@@ -194,6 +195,7 @@ def process(path, services, cats, extras, write):
                 rows.append('</table>')
         updated = re.sub(r'(<section class="section "><div class="wrap">).*?(<p class="disclaimer">)',
                          lambda m: m.group(1) + '\n'.join(rows) + m.group(2), updated, count=1, flags=re.S)
+    updated = render_copy(updated, services, extras, old_services)
     if updated != original:
         if write:
             path.write_text(updated, encoding="utf-8")

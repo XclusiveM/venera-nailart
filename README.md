@@ -15,6 +15,7 @@
 python3 scripts/sync_catalog.py --write
 python3 tests/check_site.py
 python3 tests/price_mutation.py
+python3 tests/catalog_copy.py
 node --check assets/site.js
 node --check assets/booking-pricing.js
 node tests/booking_pricing.cjs
@@ -23,7 +24,7 @@ python3 tests/smoke.py
 
 Для smoke-тестов нужны Python Playwright и установленный Chromium. Если установлен WebKit, он также проверяется. Отчёт по 320/390/768/1440 px и снимки сохраняются в `artifacts/` и не коммитятся. CI устанавливает оба браузера.
 
-Изменения — в отдельной ветке и pull request. Каталог синхронизировать и проверять до коммита. Синхронизация таблиц не гарантирует обновления всех произвольных цен в FAQ, метаданных и JSON-LD; проверка `price_mutation.py` подтверждает обнаружение конкретной устаревшей цены.
+Изменения — в отдельной ветке и pull request. Каталог синхронизировать и проверять до коммита. Цены в тексте привязываются через `data-price-id`, длительности — через `data-duration-id`, метаданные — через `data-catalog-template`. Скрипт `scripts/catalog_copy.py` обновляет эти ссылки, FAQ и предложения JSON-LD. Новое упоминание цены нужно привязать к ID, а не вводить независимым числом. `tests/catalog_copy.py` проверяет независимое изменение совпадающих сумм в изолированном checkout.
 
 ## Запись
 

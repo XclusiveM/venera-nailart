@@ -8,10 +8,12 @@
   var CFG = json('site-data'), INFO = json('info-data');
   var ORIGINAL_SERVICES = (CFG.services || []).slice();
   var catalogLoaded = false;
+  var catalogAbort = new AbortController();
+  var catalogTimer = setTimeout(function(){catalogAbort.abort();}, 3000);
   /* Единый каталог услуг: при сетевой ошибке сохраняем прежний встроенный прайс.
      Важно: статические текстовые цены на страницах пока не синхронизированы. */
   try {
-    var response = await fetch('data/services.json', { cache: 'no-store' });
+    var response = await fetch('data/services.json', { cache: 'no-store', signal: catalogAbort.signal });
     if (!response.ok) throw new Error('HTTP ' + response.status);
     var catalog = await response.json();
     if (catalog.schemaVersion !== 1 || !Array.isArray(catalog.services) ||
@@ -30,6 +32,13 @@
       }
       seenIds[item.id] = true;
     });
+    var extraIds={};
+    catalog.extras.forEach(function(item){
+      if(!item||typeof item.id!=='string'||extraIds[item.id]||typeof item.name!=='string'||!item.name.trim()||!Number.isSafeInteger(item.price)||item.price<0){
+        throw new Error('Ошибка данных дополнения');
+      }
+      extraIds[item.id]=true;
+    });
     catalogLoaded = true;
     CFG.services = catalog.services.filter(function (item) {
       return !item.status || item.status === 'published';
@@ -41,7 +50,7 @@
     CFG.individualVisit = catalog.individualVisit;
   } catch (error) {
     if (window.console) console.warn('[catalog] Встроенный прайс используется как резервный', error);
-  }
+  } finally { clearTimeout(catalogTimer); }
   /* Обновляем существующие таблицы прайса из единого каталога, не используя innerHTML
      с пользовательскими данными. Скрытые услуги убираем из таблиц. */
   function syncPriceTables() {
@@ -85,6 +94,12 @@
   var SVC = CFG.services || [];
   function fmt(n) { return n == null ? 'по запросу' : new Intl.NumberFormat('ru-RU').format(n) + ' ₽'; }
   function dur(m) { if (!m) return ''; var h = Math.floor(m / 60), mm = m % 60; return h && mm ? h + ' ч ' + mm + ' мин' : h ? h + ' ч' : mm + ' мин'; }
+  // Visible prices use stable IDs, including hero cards and FAQ copy.
+  $$('[data-price-id],[data-duration-id]').forEach(function(el){
+    var id=el.dataset.priceId||el.dataset.durationId;
+    var item=SVC.concat(CFG.extras||[]).find(function(s){return s.id===id;});
+    el.textContent=el.dataset.priceId ? fmt(item&&item.price) : item&&item.min ? dur(item.min) : 'по запросу';
+  });
   function tgUrl(text) { return 'https://t.me/' + CFG.tg + '?text=' + encodeURIComponent(text); }
   function find(name) {
     for (var i = 0; i < SVC.length; i++) if (SVC[i].name === name) return SVC[i];
@@ -115,9 +130,21 @@
   safe('menu', function () {
     var btn = $('.menu-btn'), sheet = $('#menu'); if (!btn || !sheet) return;
     function set(open) { sheet.hidden = !open; btn.setAttribute('aria-expanded', String(open)); }
-    btn.addEventListener('click', function () { set(sheet.hidden); });
+    btn.addEventListener('click', function () { var open=sheet.hidden;set(open);if(open){var first=$('a',sheet);if(first)first.focus();} });
     $$('a', sheet).forEach(function (a) { a.addEventListener('click', function () { set(false); }); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape'&&!sheet.hidden){set(false);btn.focus();} });
+    document.addEventListener('click',function(e){if(!sheet.hidden&&!sheet.contains(e.target)&&!btn.contains(e.target))set(false);});
+  });
+
+  // Keyboard navigation for all tab groups; skip tabs unavailable to a master.
+  $$('[role="tablist"]').forEach(function(group){
+    group.addEventListener('keydown',function(e){
+      if(['ArrowLeft','ArrowRight','Home','End'].indexOf(e.key)<0)return;
+      var tabs=$$('[role="tab"]',group).filter(function(t){return !t.hidden&&!t.disabled;});
+      var index=tabs.indexOf(document.activeElement);if(index<0||!tabs.length)return;
+      e.preventDefault();var next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+      tabs[next].focus();tabs[next].click();
+    });
   });
 
   /* ---------- Мобильная кнопка записи ---------- */
@@ -242,7 +269,11 @@
       list.replaceChildren();help.textContent=sectionIntro[tab];
       $$('.booking-master-switch button',root).forEach(function(btn){btn.setAttribute('aria-pressed',String(btn.dataset.master===master));});
       var displayGroups=master==='julia' ? {mani:[{title:'Маникюр, укрепление и наращивание',ids:['julia-mani','julia-gel','julia-hard-gel','julia-hard-poly','julia-ext','julia-remove']}],pedi:[{title:'Педикюр',ids:['julia-toes']}],podo:[],men:[]} : groups;
-      (displayGroups[tab]||[]).forEach(function(g){
+      var categoryGroups=(displayGroups[tab]||[]).slice();
+      var groupedIds=categoryGroups.reduce(function(ids,g){return ids.concat(g.ids);},[]);
+      var additional=available().filter(function(s){return s.cat===tab&&groupedIds.indexOf(s.id)<0;});
+      if(additional.length)categoryGroups.push({title:'Другие услуги',ids:additional.map(function(s){return s.id;})});
+      categoryGroups.forEach(function(g){
         var group=document.createElement('section');group.className='booking-group';
         var head=document.createElement('h3');head.className='booking-group-title';head.textContent=g.title;group.append(head);
         var choices=document.createElement('div');choices.className='booking-group-choices';
@@ -283,15 +314,18 @@
       if(privateAllowed&&!unknown&&mins!=null&&window.BookingPricing){
         privateQuote=window.BookingPricing.individualVisit(SVC,CFG.individualVisit,master,price,mins);
       }
-      privatePrice.textContent=!sv.length?'Выберите услуги для расчёта доплаты':privateQuote ? 'Доплата: '+fmt(privateQuote.surcharge)+' за '+dur(mins) : 'Доплата по запросу: нужны полные цены и длительности всех выбранных услуг';
+      privatePrice.hidden=!privateInput.checked;
+      privatePrice.textContent=!sv.length?'Выберите услуги для расчёта доплаты':privateQuote ? 'Доплата: '+fmt(privateQuote.surcharge)+' за '+dur(mins) : 'Доплата по запросу — Венера уточнит стоимость и длительность мужского маникюра.';
       var privateUnknown=privateInput.checked&&!privateQuote;
       var finalPrice=privateInput.checked&&privateQuote?privateQuote.total:price;
       approx=approx||(privateInput.checked&&privateQuote&&privateQuote.estimated);
       var pricePrefix=fromPrice?'от ':approx?'≈ ':'';
       var totalText=unknown||privateUnknown?'Стоимость уточняется':pricePrefix+fmt(finalPrice);
-      bookingLink.hidden=!!picks.men||privateInput.checked||!sv.length;
-      if(master==='julia'){bookingLink.href='https://bumpix.net/463374';bookingLink.target='_blank';bookingLink.rel='noopener';}
-      else {bookingLink.href=CFG.book;bookingLink.target='_blank';bookingLink.rel='noopener';}
+      if(bookingLink){
+        bookingLink.hidden=!!picks.men||privateInput.checked||!sv.length;
+        bookingLink.href=master==='julia'?'https://bumpix.net/463374':CFG.book;
+        bookingLink.target='_blank';bookingLink.rel='noopener';
+      }
       statusNode.textContent='';
       var names=sv.map(function(x){return x.name;});
       selectionText.textContent=names.length?'В вашем списке: '+names.join(' + '):'Услуги не выбраны';
