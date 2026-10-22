@@ -295,8 +295,8 @@ with sync_playwright() as p:
         pg = page(br, 390, 'index.html?service=men-mani#calc')
         if 'Мужской маникюр' not in pg.inner_text('#lines'):
             err.append(f'{kind}: мужская услуга не выбрана через ссылку')
-        if 'Стоимость уточняется' not in pg.inner_text('#total'):
-            err.append(f'{kind}: неутверждённая мужская цена показана как окончательная')
+        if spaces(pg.inner_text('#total')) != '≈ 1 700 ₽' or '45 мин' not in pg.inner_text('#time'):
+            err.append(f'{kind}: предварительные мужские цена и время не восстановлены')
         if pg.locator('#calc .summary > a.btn:not(#sendReq)').is_visible():
             err.append(f'{kind}: мужская запись ведёт в Bumpix')
         if pg.locator('#privateVisit').count():
@@ -307,12 +307,12 @@ with sync_playwright() as p:
         if pg.locator('#svcList .nm').count() != 3 or 'Мужской маникюр' not in pg.inner_text('#lines'):
             err.append(f'{kind}: отдельный калькулятор потерял мужские услуги')
         pg.locator('#privateVisit').check()
-        if 'Стоимость уточняется' not in pg.inner_text('#total') or 'по запросу' not in pg.inner_text('#privateVisitPrice'):
-            err.append(f'{kind}: неизвестная длительность дала выдуманный приватный тариф')
+        if spaces(pg.inner_text('#total')) != '≈ 9 000 ₽' or '7 300 ₽' not in spaces(pg.inner_text('#privateVisitPrice')):
+            err.append(f'{kind}: максимальный индивидуальный расчёт неверен для маникюра 1700 ₽ / 45 мин')
         if pg.locator('#calc .summary > a.btn:not(#sendReq)').is_visible():
             err.append(f'{kind}: индивидуальный визит отправляется в обычную онлайн-запись')
         before = unquote(pg.get_attribute('#sendReq', 'href') or '')
-        if 't.me/Venera_Ni' not in before or 'без других клиентов' not in before or 'Доплата:' not in before:
+        if 't.me/Venera_Ni' not in before or 'без других клиентов' not in before or 'Доплата:' not in before or '7 300 ₽' not in spaces(before) or '≈ 9 000 ₽' not in spaces(before):
             err.append(f'{kind}: мужская индивидуальная заявка потеряла условия')
         pg.locator('.booking-preview summary').click()
         if pg.inner_text('#requestPreview') not in before:
@@ -324,9 +324,13 @@ with sync_playwright() as p:
             err.append(f'{kind}: обычный мужской визит сохранил приватные условия')
         pg.locator('#privateVisit').check()
         pg.locator('#svcList .nm').filter(has_text='Мужской педикюр').click()
+        if spaces(pg.inner_text('#total')) != '≈ 3 000 ₽' or '1 ч 15 мин' not in pg.inner_text('#time'):
+            err.append(f'{kind}: мужской педикюр потерял цену или длительность')
         if pg.locator('#privateVisit').is_visible() or 'без других клиентов' in unquote(pg.get_attribute('#sendReq', 'href') or ''):
             err.append(f'{kind}: индивидуальный визит сохранился у педикюра')
         pg.locator('#svcList .nm').filter(has_text='Мужской маникюр и педикюр').click()
+        if spaces(pg.inner_text('#total')) != '≈ 4 700 ₽' or '2 ч' not in pg.inner_text('#time'):
+            err.append(f'{kind}: мужской комплекс потерял цену или длительность')
         if pg.locator('#privateVisit').is_visible():
             err.append(f'{kind}: индивидуальный визит появился у комплекса')
         pg.locator('.booking-reset').click()
