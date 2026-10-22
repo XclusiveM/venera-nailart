@@ -103,6 +103,25 @@ def replace_prices(content, old_services, services):
     return TABLE.sub(table_repl, content)
 
 
+def check_missing_services(path, services):
+    """Detect newly published services absent from the static price table.
+
+    Only the main price list is expected to contain every service; category
+    tables on other pages are intentionally partial.
+    """
+    if path.name != "ceny.html":
+        return []
+    source = path.read_text(encoding="utf-8")
+    tables = TABLE.findall(source)
+    if not tables:
+        return ["ceny.html: отсутствует таблица прайса"]
+    text = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", body)) for _, body, _ in tables)
+    missing = [s["name"] for s in services
+               if s.get("status", "published") == "published"
+               and s["name"] not in text]
+    return ["ceny.html: в таблице отсутствует услуга: " + name for name in missing]
+
+
 def process(path, services, cats, extras, write):
     original = path.read_text(encoding="utf-8")
     match = SITE_BLOCK.search(original)
@@ -131,11 +150,14 @@ def main():
     services, cats, extras = validate(json.loads(DATA.read_text(encoding="utf-8")))
     pages = sorted(ROOT.glob("*.html"))
     changed = [str(p.relative_to(ROOT)) for p in pages if process(p, services, cats, extras, args.write)]
+    missing = check_missing_services(ROOT / "ceny.html", services)
+    if missing:
+        print("\\n".join(missing), file=sys.stderr)
     if changed:
         print(("Синхронизированы: " if args.write else "Требуется синхронизация: ") + ", ".join(changed))
     else:
         print("Каталог и HTML синхронизированы")
-    return 1 if args.check and changed else 0
+    return 1 if (args.check and changed) or missing else 0
 
 
 if __name__ == "__main__":
