@@ -152,7 +152,7 @@ def main():
     changed = [str(p.relative_to(ROOT)) for p in pages if process(p, services, cats, extras, args.write)]
     missing = check_missing_services(ROOT / "ceny.html", services)
     if missing:
-        print("\\n".join(missing), file=sys.stderr)
+        print("\n".join(missing), file=sys.stderr)
     if changed:
         print(("Синхронизированы: " if args.write else "Требуется синхронизация: ") + ", ".join(changed))
     else:
