@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Сборка сайта «Венера, ногтевая студия».
 
-Единственный источник цен и контактов: src/data.json. Описания услуг: src/info.json.
+Источник услуг и цен: data/services.json; контакты: src/data.json; описания: src/info.json.
 Запуск из корня репозитория:  python3 src/build.py          — собрать страницы в корень
                               python3 src/build.py --check  — проверить, что собранные файлы актуальны
 """
@@ -12,6 +12,13 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'src'
 D = json.loads((SRC / 'data.json').read_text(encoding='utf-8'))
+# Единый источник услуг, категорий и цен для сборки и админки.
+CATALOG = json.loads((ROOT / 'data' / 'services.json').read_text(encoding='utf-8'))
+if CATALOG.get('schemaVersion') != 1:
+    raise ValueError('Unsupported services catalog schema')
+D['categories'] = CATALOG['categories']
+D['services'] = [s for s in CATALOG['services'] if s.get('status', 'published') == 'published']
+D['extras'] = [s for s in CATALOG['extras'] if s.get('status', 'published') == 'published']
 INFO = json.loads((SRC / 'info.json').read_text(encoding='utf-8'))
 PORTFOLIO = json.loads((SRC / 'portfolio.json').read_text(encoding='utf-8'))
 WORKS = PORTFOLIO['photos']
