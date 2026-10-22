@@ -122,6 +122,31 @@ def check_missing_services(path, services):
     return ["ceny.html: в таблице отсутствует услуга: " + name for name in missing]
 
 
+def stale_price_locations(path, old_services, services):
+    """Report old unambiguous ₽ amounts outside embedded catalog JSON with line numbers.
+
+    A shared price is not unambiguously attributable to one service, so it is
+    intentionally not flagged without additional service context.
+    """
+    original = path.read_text(encoding="utf-8")
+    visible = SITE_BLOCK.sub(lambda m: m.group(1) + m.group(3), original)
+    current = {x["id"]: x for x in services}
+    valid_prices = {x.get("price") for x in services if x.get("price") is not None}
+    findings = []
+    for old in old_services:
+        new = current.get(old.get("id"))
+        before = old.get("price")
+        if not new or before is None or before == new.get("price") or before in valid_prices:
+            continue
+        # Match either spaces, NBSP or narrow NBSP as thousand separators.
+        digits = str(before)
+        pattern = r"[\\s\\u00a0\\u202f]*".join(re.escape(digits[max(0, len(digits) % 3):][i:i+3]) for i in range(0, len(digits[max(0, len(digits) % 3):]), 3)) if len(digits) <= 3 else re.escape(digits[:-3]) + r"[\\s\\u00a0\\u202f]*" + re.escape(digits[-3:])
+        for match in re.finditer(r"(?<!\\d)" + pattern + r"\\s*₽", visible):
+            line = visible.count("\\n", 0, match.start()) + 1
+            findings.append(f"{path.name}:{line}: возможно устаревшая цена {match.group(0)!r} (услуга {old['id']}, актуально {new.get('price')} ₽)")
+    return sorted(set(findings))
+
+
 def process(path, services, cats, extras, write):
     original = path.read_text(encoding="utf-8")
     match = SITE_BLOCK.search(original)
@@ -149,15 +174,23 @@ def main():
     args = parser.parse_args()
     services, cats, extras = validate(json.loads(DATA.read_text(encoding="utf-8")))
     pages = sorted(ROOT.glob("*.html"))
+    stale = []
+    for p in pages:
+        match = SITE_BLOCK.search(p.read_text(encoding="utf-8"))
+        if match:
+            previous = json.loads(match.group(2)).get("services", [])
+            stale.extend(stale_price_locations(p, previous, services))
     changed = [str(p.relative_to(ROOT)) for p in pages if process(p, services, cats, extras, args.write)]
     missing = check_missing_services(ROOT / "ceny.html", services)
     if missing:
         print("\n".join(missing), file=sys.stderr)
+    if stale:
+        print("\n".join(stale), file=sys.stderr)
     if changed:
         print(("Синхронизированы: " if args.write else "Требуется синхронизация: ") + ", ".join(changed))
     else:
         print("Каталог и HTML синхронизированы")
-    return 1 if (args.check and changed) or missing else 0
+    return 1 if (args.check and changed) or missing or (args.check and stale) else 0
 
 
 if __name__ == "__main__":
