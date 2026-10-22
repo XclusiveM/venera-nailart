@@ -252,8 +252,8 @@ with sync_playwright() as p:
         pg.close()
         # Private visit exists only on the separate men's manicure page.
         pg = page(br, 390, 'muzhskoj-manikyur.html#calc')
-        if pg.locator('#svcList .nm').count() != 1 or 'Мужской маникюр' not in pg.inner_text('#lines'):
-            err.append(f'{kind}: отдельный калькулятор показывает не мужской маникюр')
+        if pg.locator('#svcList .nm').count() != 3 or 'Мужской маникюр' not in pg.inner_text('#lines'):
+            err.append(f'{kind}: отдельный калькулятор потерял мужские услуги')
         pg.locator('#privateVisit').check()
         if 'Стоимость уточняется' not in pg.inner_text('#total') or 'по запросу' not in pg.inner_text('#privateVisitPrice'):
             err.append(f'{kind}: неизвестная длительность дала выдуманный приватный тариф')
@@ -270,6 +270,13 @@ with sync_playwright() as p:
         pg.locator('#privateVisit').uncheck()
         if 'без других клиентов' in unquote(pg.get_attribute('#sendReq', 'href') or ''):
             err.append(f'{kind}: обычный мужской визит сохранил приватные условия')
+        pg.locator('#privateVisit').check()
+        pg.locator('#svcList .nm').filter(has_text='Мужской педикюр').click()
+        if pg.locator('#privateVisit').is_visible() or 'без других клиентов' in unquote(pg.get_attribute('#sendReq', 'href') or ''):
+            err.append(f'{kind}: индивидуальный визит сохранился у педикюра')
+        pg.locator('#svcList .nm').filter(has_text='Мужской маникюр и педикюр').click()
+        if pg.locator('#privateVisit').is_visible():
+            err.append(f'{kind}: индивидуальный визит появился у комплекса')
         pg.locator('.booking-reset').click()
         if pg.locator('#privateVisit').is_checked() or pg.get_attribute('#sendReq', 'aria-disabled') != 'true':
             err.append(f'{kind}: очистка оставила приватный визит или активную заявку')

@@ -183,7 +183,7 @@
       podo:'Выберите одну основную процедуру для предварительного расчёта. Совмещение обработок и необходимость дополнительных процедур согласовываются с мастером.',
       men:'Мужские услуги записывает Венера в Telegram. Выберите уход и добавьте пожелания; цену и длительность она подтвердит в переписке.'};
     var requested = new URLSearchParams(location.search).get('service');
-    var initial = SVC.find(function(s){return s.id === requested && (!mensManicurePage || s.id === 'men-mani');});
+    var initial = SVC.find(function(s){return s.id === requested && (!mensManicurePage || s.cat === 'men');});
     if (initial) {master=initial.master||'venera';tab=initial.cat;picks[tab]=initial.id;}
     else if (mensManicurePage) {tab='men';picks.men='men-mani';}
     else {picks.mani='mani-gel';}
@@ -219,7 +219,7 @@
     var previewLabel=document.createElement('summary');previewLabel.textContent='Посмотреть текст заявки';
     var previewText=document.createElement('pre');previewText.id='requestPreview';preview.append(previewLabel,previewText);
     send.parentNode.insertBefore(preview,send);
-    function available(){return SVC.filter(function(s){return (s.master||'venera')===master && (!mensManicurePage || s.id==='men-mani');});}
+    function available(){return SVC.filter(function(s){return (s.master||'venera')===master && (!mensManicurePage || s.cat==='men');});}
     function chosen(){return ['mani','pedi','men','podo'].map(function(cat){return available().find(function(s){return s.id===picks[cat];});}).filter(Boolean);}
     function canAddExtras(){return ['mani-gel','julia-gel','julia-hard-gel','julia-hard-poly','julia-ext'].indexOf(picks.mani)>=0;}
     function extras(){return canAddExtras() ? (CFG.extras||[]).filter(function(x){return (x.master||'venera')===master && !!addons[x.id];}) : [];}
