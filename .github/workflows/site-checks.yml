@@ -16,9 +16,14 @@ jobs:
       - name: Static checks and build freshness
         run: python tests/check_site.py
       - name: Catalog price mutation regression
-        run: python3 tests/price_mutation.py
+        run: |
+          python3 tests/price_mutation.py
+          python3 tests/catalog_copy.py
       - name: JS syntax
-        run: node --check assets/site.js
+        run: |
+          node --check assets/site.js
+          node --check assets/booking-pricing.js
+          node tests/booking_pricing.cjs
       - name: Browser smoke test (Chromium + WebKit)
         run: |
           pip install playwright==1.47.0

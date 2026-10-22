@@ -10,7 +10,7 @@ def spaces(value):
     return value.replace(chr(160), ' ').replace(chr(8239), ' ')
 from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
-PAGES = sorted(p.name for p in ROOT.glob('*.html'))
+PAGES = sorted(p.name for p in ROOT.glob('*.html')) + sorted(str(p.relative_to(ROOT)) for p in (ROOT / 'admin-preview').glob('*.html'))
 SNAPSHOTS = ROOT / 'artifacts' / 'screenshots'
 SNAPSHOTS.mkdir(parents=True, exist_ok=True)
 class H(http.server.SimpleHTTPRequestHandler):
@@ -49,6 +49,8 @@ with sync_playwright() as p:
                 if sw > w:
                     offenders = pg.evaluate('''() => [...document.querySelectorAll('body *')].map(e => ({tag:e.tagName.toLowerCase(), cls:typeof e.className==='string'?e.className.slice(0,65):'', right:Math.round(e.getBoundingClientRect().right), width:Math.round(e.getBoundingClientRect().width)})).filter(e => e.right > innerWidth + 2).sort((a,b)=>b.right-a.right).slice(0,8)''')
                     err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}; offenders={offenders}')
+                if path != 'muzhskoj-manikyur.html' and pg.locator('#privateVisit').count():
+                    err.append(f'{kind} {w} {path}: индивидуальный визит вне мужской страницы')
                 if pg.errs: err.append(f'{kind} {w} {path}: {pg.errs}')
                 if path == 'index.html':
                     if pg.locator('#works .folio-card').count() != 8:
@@ -61,15 +63,11 @@ with sync_playwright() as p:
                         err.append(f'{kind} {w}: огромная схема стопы всё ещё видна')
                     if pg.locator('.tryon .hand-stage:not([hidden])').count() != 0:
                         err.append(f'{kind} {w}: мультяшная рука всё ещё видна')
-                    # Both specialist profiles must be reachable and modal triggers must match.
+                    # Both specialist profiles must be reachable directly.
                     for profile in ('188382', '463374'):
                         url = f'https://bumpix.net/{profile}'
                         if pg.locator(f'#specialists .booking-v3-card a[href="{url}"][target="_blank"]').count() != 1:
                             err.append(f'{kind} {w}: отсутствует основная ссылка Bumpix {profile}')
-                        if pg.locator(f'#specialists button[data-booking-open="{url}"]').count() != 1:
-                            err.append(f'{kind} {w}: отсутствует встроенная запись Bumpix {profile}')
-                    if pg.locator('#booking-v3-dialog').count() != 1:
-                        err.append(f'{kind} {w}: отсутствует диалог онлайн-записи')
                     if pg.locator('[data-remind]').count():
                         err.append(f'{kind} {w}: осталось выдуманное календарное напоминание')
                 if (path == 'index.html' and w in (390, 1440)) or (path == 'muzhskoj-manikyur.html' and w == 390):
@@ -79,34 +77,14 @@ with sync_playwright() as p:
                         pg.locator(f'#{section}').scroll_into_view_if_needed()
                         pg.screenshot(path=str(SNAPSHOTS / f'{kind}-{section}-390.png'), full_page=False)
                 pg.close()
-        # Booking modal: check both masters, external fallback, Escape and focus restoration.
+        # Booking now uses direct external links, not an iframe/dialog.
         booking = page(br, 390, 'index.html')
-        for profile, master in (('188382', 'Венера'), ('463374', 'Юлия')):
-            trigger = booking.locator(f'button[data-booking-open="https://bumpix.net/{profile}"]')
-            trigger.scroll_into_view_if_needed()
-            trigger.click()
-            dialog = booking.locator('#booking-v3-dialog')
-            if not dialog.is_visible():
-                err.append(f'{kind}: окно записи {master} не открылось')
-            else:
-                if booking.locator('#booking-v3-external').get_attribute('href') != f'https://bumpix.net/{profile}':
-                    err.append(f'{kind}: неверная внешняя ссылка записи {master}')
-                if booking.locator('#booking-v3-frame').get_attribute('src') != f'https://bumpix.net/{profile}':
-                    err.append(f'{kind}: неверный адрес iframe {master}')
-                if master not in booking.locator('#booking-v3-master').inner_text():
-                    err.append(f'{kind}: неверное имя мастера в окне записи')
-                booking.keyboard.press('Escape')
-                if dialog.is_visible():
-                    err.append(f'{kind}: Escape не закрыл окно записи')
-                try:
-                    booking.wait_for_function(
-                        "() => !document.querySelector('#booking-v3-frame').hasAttribute('src')",
-                        timeout=3000
-                    )
-                except Exception:
-                    err.append(f'{kind}: iframe не очищен после закрытия')
-                if not trigger.evaluate('(el) => document.activeElement === el'):
-                    err.append(f'{kind}: фокус не возвращён кнопке записи')
+        for profile in ('188382', '463374'):
+            link = booking.locator(f'.booking-v3-card a[href="https://bumpix.net/{profile}"]')
+            if link.count() != 1 or link.get_attribute('target') != '_blank':
+                err.append(f'{kind}: неверная прямая ссылка мастера {profile}')
+        if booking.locator('#booking-v3-frame').count():
+            err.append(f'{kind}: устаревший iframe записи')
         if booking.errs:
             err.append(f'{kind} booking: {booking.errs}')
         booking.close()
@@ -233,14 +211,146 @@ with sync_playwright() as p:
                 if pg.is_visible('#sheet'): err.append(f'{kind}: окно «i» не закрылось')
         if pg.errs: err.append(f'{kind} interactions: {pg.errs}')
         pg.close()
+        # Customer navigation, keyboard access and the editorial homepage.
+        nav = page(br, 390, 'index.html')
+        nav.locator('.menu-btn').click()
+        if nav.locator('#menu').get_attribute('hidden') is not None:
+            err.append(f'{kind}: меню не открылось')
+        nav.keyboard.press('Escape')
+        if nav.locator('.menu-btn').get_attribute('aria-expanded') != 'false':
+            err.append(f'{kind}: Escape не закрыл меню')
+        nav.locator('#calc [data-tab="mani"]').focus()
+        nav.keyboard.press('ArrowRight')
+        if nav.locator('#calc [data-tab="pedi"]').get_attribute('aria-selected') != 'true':
+            err.append(f'{kind}: клавиатурный переход вкладок не работает')
+        if nav.locator('#services h2').count() != 1:
+            err.append(f'{kind}: заголовок услуг повреждён')
+        if not nav.locator('.hero-photo img').evaluate('(im) => im.complete && im.naturalWidth > 0'):
+            err.append(f'{kind}: фото первого экрана не загрузилось')
+        if nav.errs: err.append(f'{kind} navigation: {nav.errs}')
+        nav.close()
+        # The recommendation page must change the actual recommendation.
+        studio = page(br, 390, 'nail-studio.html')
+        studio.get_by_text('Ярко и смело', exact=True).click()
+        if 'Смелый образ' not in studio.locator('#advisorTitle').inner_text():
+            err.append(f'{kind}: подбор образа не обновляет результат')
+        studio.locator('.palette-tile[data-name="Вишня"]').click()
+        if 'Вишня' not in studio.locator('#pickedLabel').inner_text():
+            err.append(f'{kind}: подборка оттенков не сохраняет выбор')
+        studio.locator('.palette-tile[data-name="Вишня"]').click()
+        if 'Вишня' in studio.locator('#pickedLabel').inner_text():
+            err.append(f'{kind}: оттенок нельзя удалить из подборки')
+        if studio.errs: err.append(f'{kind} studio: {studio.errs}')
+        studio.close()
+        # Public demo editors are usable but never publish changes.
+        settings = page(br, 390, 'admin-preview/marketing.html')
+        if not settings.locator('#title').input_value():
+            err.append(f'{kind}: настройки продвижения не загрузились')
+        settings.locator('#title').fill('Проверка локального черновика')
+        settings.locator('#title').press('Tab')
+        if 'сохранён' not in settings.locator('#message').inner_text():
+            err.append(f'{kind}: черновик продвижения не сохраняется')
+        settings.reload()
+        if settings.locator('#title').input_value() != 'Проверка локального черновика':
+            err.append(f'{kind}: черновик продвижения потерян после обновления')
+        if settings.errs: err.append(f'{kind} marketing: {settings.errs}')
+        settings.close()
+        editor = page(br, 390, 'admin-preview/index.html')
+        editor.locator('#search').fill('Маникюр с гель-лаком')
+        if editor.locator('#list article').count() != 2:
+            err.append(f'{kind}: редактор не разделяет одноимённые услуги мастеров')
+        if editor.get_by_text('Мастер: Юлия', exact=True).count() != 1:
+            err.append(f'{kind}: редактор не показывает мастера услуги')
+        if editor.errs: err.append(f'{kind} catalog editor: {editor.errs}')
+        editor.close()
+        # Master switch, separate catalogs, exact service info and private quote.
+        pg = page(br, 390, 'index.html')
+        pg.locator('[data-master="julia"]').click()
+        if pg.locator('#calc [data-tab="men"]').is_visible():
+            err.append(f'{kind}: Юлии предлагается мужской уход из чужого каталога')
+        pg.locator('#svcList .nm').filter(has_text='Маникюр с гель-лаком').click()
+        if '1 800' not in spaces(pg.inner_text('#total')):
+            err.append(f'{kind}: цена Юлии смешана с ценой Венеры')
+        pg.locator('#svcList [data-service-id="julia-gel"]').click()
+        if '1 800' not in spaces(pg.inner_text('#sheet .sheet-meta')):
+            err.append(f'{kind}: окно информации показывает цену другого мастера')
+        if pg.locator('#sheet .actions a.btn').first.get_attribute('href') != 'https://bumpix.net/463374':
+            err.append(f'{kind}: окно услуги Юлии отправляет к другому мастеру')
+        pg.keyboard.press('Escape')
+        if pg.locator('#privateVisit').count():
+            err.append(f'{kind}: индивидуальный визит появился в общем калькуляторе')
+        pg.locator('[data-master="venera"]').click()
+        pg.locator('#svcList .nm').filter(has_text='Маникюр без покрытия').click()
+        if pg.locator('#extras').is_visible():
+            err.append(f'{kind}: дизайн предлагается без покрытия')
+        if pg.errs: err.append(f'{kind} private/master: {pg.errs}')
+        pg.close()
+        prices = page(br, 390, 'ceny.html')
+        if '2 500' not in spaces(prices.locator('[data-service-id="mani-gel"] td').last.inner_text()):
+            err.append(f'{kind}: прайс Венеры заменён ценой Юлии')
+        if '1 800' not in spaces(prices.locator('[data-service-id="julia-gel"] td').last.inner_text()):
+            err.append(f'{kind}: прайс Юлии отсутствует')
+        prices.close()
         # Предварительный выбор при переходе из мужского раздела.
         pg = page(br, 390, 'index.html?service=men-mani#calc')
         if 'Мужской маникюр' not in pg.inner_text('#lines'):
             err.append(f'{kind}: мужская услуга не выбрана через ссылку')
-        if 'Стоимость уточняется' not in pg.inner_text('#total'):
-            err.append(f'{kind}: неутверждённая мужская цена показана как окончательная')
-        if pg.errs: err.append(f'{kind} male deep link: {pg.errs}')
+        if spaces(pg.inner_text('#total')) != '≈ 1 700 ₽' or '45 мин' not in pg.inner_text('#time'):
+            err.append(f'{kind}: предварительные мужские цена и время не восстановлены')
+        if pg.locator('#calc .summary > a.btn:not(#sendReq)').is_visible():
+            err.append(f'{kind}: мужская запись ведёт в Bumpix')
+        if pg.locator('#privateVisit').count():
+            err.append(f'{kind}: мужская услуга на главной открыла индивидуальный визит')
         pg.close()
+        # Private visit exists only on the separate men's manicure page.
+        pg = page(br, 390, 'muzhskoj-manikyur.html#calc')
+        if pg.locator('#svcList .nm').count() != 3 or 'Мужской маникюр' not in pg.inner_text('#lines'):
+            err.append(f'{kind}: отдельный калькулятор потерял мужские услуги')
+        pg.locator('#privateVisit').check()
+        if spaces(pg.inner_text('#total')) != '≈ 3 825 ₽' or '2 125 ₽' not in spaces(pg.inner_text('#privateVisitPrice')):
+            err.append(f'{kind}: максимальный индивидуальный расчёт неверен для маникюра 1700 ₽ / 45 мин')
+        if pg.locator('#calc .summary > a.btn:not(#sendReq)').is_visible():
+            err.append(f'{kind}: индивидуальный визит отправляется в обычную онлайн-запись')
+        before = unquote(pg.get_attribute('#sendReq', 'href') or '')
+        if 't.me/Venera_Ni' not in before or 'без других клиентов' not in before or 'Доплата:' not in before or '2 125 ₽' not in spaces(before) or '≈ 3 825 ₽' not in spaces(before):
+            err.append(f'{kind}: мужская индивидуальная заявка потеряла условия')
+        pg.locator('.booking-preview summary').click()
+        if pg.inner_text('#requestPreview') not in before:
+            err.append(f'{kind}: предпросмотр заявки не совпадает с Telegram')
+        pg.locator('#privateVisit').scroll_into_view_if_needed()
+        pg.screenshot(path=str(SNAPSHOTS / f'{kind}-private-visit-390.png'), full_page=False)
+        pg.locator('#privateVisit').uncheck()
+        if 'без других клиентов' in unquote(pg.get_attribute('#sendReq', 'href') or ''):
+            err.append(f'{kind}: обычный мужской визит сохранил приватные условия')
+        pg.locator('#privateVisit').check()
+        pg.locator('#svcList .nm').filter(has_text='Мужской педикюр').click()
+        if spaces(pg.inner_text('#total')) != '≈ 3 000 ₽' or '1 ч 15 мин' not in pg.inner_text('#time'):
+            err.append(f'{kind}: мужской педикюр потерял цену или длительность')
+        if pg.locator('#privateVisit').is_visible() or 'без других клиентов' in unquote(pg.get_attribute('#sendReq', 'href') or ''):
+            err.append(f'{kind}: индивидуальный визит сохранился у педикюра')
+        pg.locator('#svcList .nm').filter(has_text='Мужской маникюр и педикюр').click()
+        if spaces(pg.inner_text('#total')) != '≈ 4 700 ₽' or '2 ч' not in pg.inner_text('#time'):
+            err.append(f'{kind}: мужской комплекс потерял цену или длительность')
+        if pg.locator('#privateVisit').is_visible():
+            err.append(f'{kind}: индивидуальный визит появился у комплекса')
+        pg.locator('.booking-reset').click()
+        if pg.locator('#privateVisit').is_checked() or pg.get_attribute('#sendReq', 'aria-disabled') != 'true':
+            err.append(f'{kind}: очистка оставила приватный визит или активную заявку')
+        if pg.errs: err.append(f'{kind} mens private: {pg.errs}')
+        pg.close()
+        # Embedded full catalog must work when the live JSON is unavailable.
+        fallback = br.new_page(viewport={'width': 390, 'height': 844})
+        fallback.route('**/data/services.json', lambda r: r.abort())
+        fallback.goto(B + 'index.html')
+        fallback.locator('[data-master="julia"]').click()
+        fallback.locator('#svcList .nm').filter(has_text='Маникюр с гель-лаком').click()
+        if '1 800' not in spaces(fallback.inner_text('#total')):
+            err.append(f'{kind}: резервный каталог потерял услуги Юлии')
+        fallback.locator('#bookingComment').fill('<img src=x onerror=alert(1)> & ? #')
+        fallback.locator('.booking-preview summary').click()
+        if fallback.locator('#requestPreview img').count() or '<img src=x' not in fallback.inner_text('#requestPreview'):
+            err.append(f'{kind}: комментарий интерпретируется как HTML')
+        fallback.close()
         pg = page(br, 390, 'podarochnyy-sertifikat.html'); pg.fill('#gTo', 'Ане'); pg.click('[data-gift=him]')
         if 'Ане' not in pg.get_attribute('#gOrder', 'href').encode().decode() and '%D0%90%D0%BD%D0%B5' not in pg.get_attribute('#gOrder', 'href'): err.append(f'{kind}: сертификат без имени в заявке')
         if pg.errs: err.append(f'{kind} gift: {pg.errs}')

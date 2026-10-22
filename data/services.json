@@ -180,34 +180,34 @@
       "id": "men-mani",
       "cat": "men",
       "name": "Мужской маникюр",
-      "price": null,
-      "min": null,
-      "note": "Без лака и блеска. Цена — рыночный ориентир, уточняется перед записью",
+      "price": 1700,
+      "min": 45,
+      "note": "Без лака и блеска. Запись через Telegram Венеры. Цена и время предварительные",
       "status": "published",
       "master": "venera",
-      "priceStatus": "market-estimate"
+      "priceStatus": "verify-with-master"
     },
     {
       "id": "men-pedi",
       "cat": "men",
       "name": "Мужской педикюр",
-      "price": null,
-      "min": null,
-      "note": "Стопы, ногти, натоптыши. Цена — рыночный ориентир, уточняется перед записью",
+      "price": 3000,
+      "min": 75,
+      "note": "Стопы, ногти, натоптыши. Запись через Telegram Венеры. Цена и время предварительные",
       "status": "published",
       "master": "venera",
-      "priceStatus": "market-estimate"
+      "priceStatus": "verify-with-master"
     },
     {
       "id": "men-both",
       "cat": "men",
       "name": "Мужской маникюр и педикюр",
-      "price": null,
-      "min": null,
-      "note": "За один визит. Цена — рыночный ориентир, уточняется перед записью",
+      "price": 4700,
+      "min": 120,
+      "note": "За один визит. Запись через Telegram Венеры. Цена и время предварительные",
       "status": "published",
       "master": "venera",
-      "priceStatus": "market-estimate"
+      "priceStatus": "verify-with-master"
     },
     {
       "id": "julia-mani",
@@ -329,5 +329,18 @@
       "status": "published"
     }
   ],
-  "pricingNote": "Цены Юлии из доступной индексированной версии Bumpix, требуют проверки; мужские цены — ориентиры рынка, не утверждённый прайс."
+  "pricingNote": "Цены и длительности Юлии требуют проверки у мастера. Мужские цены и длительности восстановлены из переданного фрагмента чата от 22.10.2026 как предварительные ориентиры до утверждения Венерой. Мужская запись — только через Telegram Венеры.",
+  "individualVisit": {
+    "mode": "maximum-time-rate",
+    "masters": [
+      {
+        "id": "venera",
+        "label": "Венера"
+      },
+      {
+        "id": "julia",
+        "label": "Юлия"
+      }
+    ]
+  }
 }
