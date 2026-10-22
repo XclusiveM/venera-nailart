@@ -46,7 +46,9 @@ with sync_playwright() as p:
                 pg = page(br, w, path)
                 sw = pg.evaluate('document.documentElement.scrollWidth')
                 overflow_results.append((kind, path, w, sw, 'FAIL' if sw > w else 'PASS'))
-                if sw > w: err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}')
+                if sw > w:
+                    offenders = pg.evaluate('''() => [...document.querySelectorAll('body *')].map(e => ({tag:e.tagName.toLowerCase(), cls:typeof e.className==='string'?e.className.slice(0,65):'', right:Math.round(e.getBoundingClientRect().right), width:Math.round(e.getBoundingClientRect().width)})).filter(e => e.right > innerWidth + 2).sort((a,b)=>b.right-a.right).slice(0,8)''')
+                    err.append(f'{kind} {w} {path}: горизонтальный скролл {sw}; offenders={offenders}')
                 if pg.errs: err.append(f'{kind} {w} {path}: {pg.errs}')
                 if path == 'index.html':
                     if pg.locator('#works .folio-card').count() != 8:
