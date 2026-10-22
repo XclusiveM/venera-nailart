@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": null,
+  "source": "index.html#site-data",
+  "publicationStatus": "migration-draft",
+  "categories": [
+    {
+      "id": "mani",
+      "title": "Маникюр",
+      "page": "manikyur.html"
+    },
+    {
+      "id": "pedi",
+      "title": "Педикюр",
+      "page": "pedikyur.html"
+    },
+    {
+      "id": "podo",
+      "title": "Подология",
+      "page": "podolog-novye-vatutinki.html"
+    },
+    {
+      "id": "men",
+      "title": "Мужской",
+      "page": "muzhskoj-manikyur.html"
+    }
+  ],
+  "services": [
+    {
+      "id": "mani-gel",
+      "cat": "mani",
+      "name": "Маникюр с гель-лаком",
+      "price": 2500,
+      "min": 90,
+      "note": "Снятие, маникюр, укрепление, покрытие",
+      "status": "published"
+    },
+    {
+      "id": "mani-plain",
+      "cat": "mani",
+      "name": "Маникюр без покрытия",
+      "price": 1200,
+      "min": 30,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "ext",
+      "cat": "mani",
+      "name": "Наращивание ногтей",
+      "price": 4000,
+      "min": 90,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "corr-gel",
+      "cat": "mani",
+      "name": "Коррекция гелем",
+      "price": 3000,
+      "min": 90,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "corr-poly",
+      "cat": "mani",
+      "name": "Коррекция полигелем",
+      "price": 3000,
+      "min": 90,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "smart",
+      "cat": "pedi",
+      "name": "Смарт-педикюр",
+      "price": 2800,
+      "min": 60,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "pedi-toes",
+      "cat": "pedi",
+      "name": "Педикюр пальчиков с гель-лаком",
+      "price": 2800,
+      "min": 60,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "pedi-gel",
+      "cat": "pedi",
+      "name": "Педикюр с гель-лаком",
+      "price": 3300,
+      "min": 60,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "podo-pedi",
+      "cat": "podo",
+      "name": "Подологический педикюр",
+      "price": 3300,
+      "min": 60,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "ingrown",
+      "cat": "podo",
+      "name": "Обработка вросшего ногтя",
+      "price": 1000,
+      "min": 60,
+      "note": "Один ноготь, без установки системы. Состав уточняйте у мастера",
+      "status": "published"
+    },
+    {
+      "id": "feet",
+      "cat": "podo",
+      "name": "Обработка стоп",
+      "price": 1700,
+      "min": 60,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "toes",
+      "cat": "podo",
+      "name": "Обработка пальчиков",
+      "price": 1700,
+      "min": 60,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "callus",
+      "cat": "podo",
+      "name": "Обработка мозоли",
+      "price": 300,
+      "min": 30,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "system",
+      "cat": "podo",
+      "name": "Коррекционная система",
+      "price": 3000,
+      "min": 60,
+      "note": "Если ноготь врастает снова",
+      "status": "published"
+    },
+    {
+      "id": "consult",
+      "cat": "podo",
+      "name": "Консультация",
+      "price": 700,
+      "min": 30,
+      "note": "",
+      "status": "published"
+    },
+    {
+      "id": "men-mani",
+      "cat": "men",
+      "name": "Мужской маникюр",
+      "price": null,
+      "min": null,
+      "note": "Без лака и блеска",
+      "status": "published"
+    },
+    {
+      "id": "men-pedi",
+      "cat": "men",
+      "name": "Мужской педикюр",
+      "price": null,
+      "min": null,
+      "note": "Стопы, ногти, натоптыши",
+      "status": "published"
+    },
+    {
+      "id": "men-both",
+      "cat": "men",
+      "name": "Мужской маникюр и педикюр",
+      "price": null,
+      "min": null,
+      "note": "За один визит",
+      "status": "published"
+    }
+  ],
+  "extras": [
+    {
+      "id": "french",
+      "name": "Френч",
+      "price": 300,
+      "from": false,
+      "status": "published"
+    },
+    {
+      "id": "design",
+      "name": "Дизайн",
+      "price": 100,
+      "from": true,
+      "status": "published"
+    }
+  ]
+}
