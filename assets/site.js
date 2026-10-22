@@ -143,14 +143,15 @@
     sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
     sheet.addEventListener('close', function () { if (lastFocus && lastFocus.focus) lastFocus.focus(); });
   }
-  function esc(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+  function esc(t) { var d = document.createElement('div'); d.textContent = String(t == null ? '' : t); return d.innerHTML.replace(/\"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function safeHref(url) { try { var u = new URL(url, location.href); return u.protocol === 'https:' || u.protocol === 'http:' ? esc(u.href) : '#'; } catch (e) { return '#'; } }
 
   /* ---------- «Что это?» ---------- */
   function openInfo(name) {
     var d = INFO[name]; if (!d) return; var s = find(name);
     var meta = s ? '<div class="sheet-meta"><span>' + fmt(s.price) + '</span>' + (s.min ? '<span>' + dur(s.min) + '</span>' : '') + '</div>' : '';
     openSheet('<h3 id="sheetTitle">' + esc(name) + '</h3>' + meta + '<h4>Что это</h4><p>' + esc(d.what) + '</p><h4>Откуда пошло</h4><p>' + esc(d.origin) + '</p><h4>Кому подходит</h4><p>' + esc(d.why) + '</p>' +
-      '<div class="actions" style="margin-top:16px"><a class="btn" href="' + CFG.book + '" target="_blank" rel="noopener">Записаться</a><a class="btn btn-line" href="' + tgUrl('Здравствуйте! Хочу записаться: ' + name.toLowerCase() + '.') + '" target="_blank" rel="noopener">Спросить в Telegram</a></div>');
+      '<div class="actions" style="margin-top:16px"><a class="btn" href="' + safeHref(CFG.book) + '" target="_blank" rel="noopener">Записаться</a><a class="btn btn-line" href="' + safeHref(tgUrl('Здравствуйте! Хочу записаться: ' + name.toLowerCase() + '.')) + '" target="_blank" rel="noopener">Спросить в Telegram</a></div>');
     goal('info_open');
   }
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-info]'); if (b) { e.preventDefault(); openInfo(b.dataset.info); } });
@@ -400,7 +401,7 @@
     var who = 'her', idx = 0;
     function item() { return G[who][idx]; }
     function opts() {
-      var box = $('#giftOpts'); box.innerHTML = '';
+      var box = $('#giftOpts'); box.replaceChildren();
       G[who].forEach(function (g, i) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'opt'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(i === idx));
         var t = document.createElement('b'); t.textContent = g[0]; var s = document.createElement('small'); s.textContent = g[2] ? 'на любые услуги' : (g[1] == null ? 'стоимость уточнит мастер' : fmt(g[1]));
