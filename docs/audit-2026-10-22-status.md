@@ -95,3 +95,19 @@ chromium,pedikyur.html,320,320,PASS
 ```
 
 Это фактические строки из шага `Show first ten overflow CSV rows`, а не результат предположений. Матрица содержит 120 проверок, но в том запуске был один FAIL: `webkit 320 nail-studio.html`.
+
+## Повторный браузерный прогон — зелёный (коммит `73e581f`)
+
+Источник: [GitHub Actions run 39739409359](https://github.com/XclusiveM/venera-nailart/actions/runs/39739409359), job `119692726796`, 22.10.2026.
+
+| Команда в CI | Код возврата | Фактический вывод |
+| --- | --- | --- |
+| `python tests/check_site.py` | 0 | `Static checks and build freshness`: success |
+| `python3 tests/price_mutation.py` | 0 | `PASS: changed price detected with file and line` |
+| Внутри mutation: `python3 scripts/sync_catalog.py --check` после временной смены `mani-gel` 2500 → 2777 | 1 (ожидаемый) | `ceny.html:39: возможно устаревшая цена '2 500 ₽' (услуга mani-gel, актуально 2777 ₽)` |
+| `node --check assets/site.js` | 0 | `JS syntax`: success |
+| `python tests/smoke.py` | 0 | `Overflow matrix: 120 checks; report: artifacts/overflow-results.csv` и `OK: smoke chromium, webkit` |
+
+В smoke-матрице 15 HTML-страниц × 4 ширины (320, 390, 768, 1440) × 2 браузера (Chromium и WebKit) = 120 проверок. Все прошли без горизонтального переполнения. CSV выгружен шагом `Upload responsive overflow matrix` в GitHub Actions. В файле выше сохранены первые десять строк из предыдущего запуска; повторный запуск также вывел CSV в лог.
+
+Важное уточнение: обычная `python3 scripts/sync_catalog.py --check` напрямую не запускалась отдельным шагом этого CI; в статических проверках она запускается через `tests/check_site.py`. Указанные коды возврата получены из GitHub Actions, а не локального контейнера.
