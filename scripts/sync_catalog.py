@@ -123,26 +123,20 @@ def check_missing_services(path, services):
 
 
 def stale_price_locations(path, old_services, services):
-    """Report old unambiguous ₽ amounts outside embedded catalog JSON with line numbers.
-
-    A shared price is not unambiguously attributable to one service, so it is
-    intentionally not flagged without additional service context.
-    """
+    """Locate stale ₽ amounts outside embedded JSON and preserve HTML line numbers."""
     original = path.read_text(encoding="utf-8")
-    visible = SITE_BLOCK.sub(lambda m: m.group(1) + ("\\n" * m.group(2).count("\\n")) + m.group(3), original)
+    visible = SITE_BLOCK.sub(lambda m: m.group(1) + ("\n" * m.group(2).count("\n")) + m.group(3), original)
     current = {x["id"]: x for x in services}
-    valid_prices = {x.get("price") for x in services if x.get("price") is not None}
     findings = []
     for old in old_services:
         new = current.get(old.get("id"))
         before = old.get("price")
         if not new or before is None or before == new.get("price"):
             continue
-        # Match either spaces, NBSP or narrow NBSP as thousand separators.
         digits = str(before)
-        pattern = r"[\\s\\u00a0\\u202f]*".join(re.escape(digits[max(0, len(digits) % 3):][i:i+3]) for i in range(0, len(digits[max(0, len(digits) % 3):]), 3)) if len(digits) <= 3 else re.escape(digits[:-3]) + r"[\\s\\u00a0\\u202f]*" + re.escape(digits[-3:])
-        for match in re.finditer(r"(?<!\\d)" + pattern + r"\\s*₽", visible):
-            line = visible.count("\\n", 0, match.start()) + 1
+        pattern = re.escape(digits[:-3]) + r"[\s\u00a0\u202f]*" + re.escape(digits[-3:]) if len(digits) > 3 else re.escape(digits)
+        for match in re.finditer(r"(?<!\d)" + pattern + r"\s*₽", visible):
+            line = visible.count("\n", 0, match.start()) + 1
             findings.append(f"{path.name}:{line}: возможно устаревшая цена {match.group(0)!r} (услуга {old['id']}, актуально {new.get('price')} ₽)")
     return sorted(set(findings))
 
