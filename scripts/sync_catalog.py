@@ -129,7 +129,7 @@ def stale_price_locations(path, old_services, services):
     intentionally not flagged without additional service context.
     """
     original = path.read_text(encoding="utf-8")
-    visible = SITE_BLOCK.sub(lambda m: m.group(1) + m.group(3), original)
+    visible = SITE_BLOCK.sub(lambda m: m.group(1) + ("\\n" * m.group(2).count("\\n")) + m.group(3), original)
     current = {x["id"]: x for x in services}
     valid_prices = {x.get("price") for x in services if x.get("price") is not None}
     findings = []
